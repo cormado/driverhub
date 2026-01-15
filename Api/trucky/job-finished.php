@@ -1,36 +1,123 @@
 <?php
 header('Content-Type: application/json');
 
-require __DIR__ . '/../../config/database.php';
+require __DIR__ . '../../../includes/db.php';
 
-/* =========================
-   📥 Leer JSON
-========================= */
 
-$payload = json_decode(file_get_contents('php://input'), true);
+function getRequestHeaders()
+{
+    if (function_exists('getallheaders')) {
+        return getallheaders();
+    }
 
-if (!$payload || $payload['event'] !== 'job.finished') {
-    http_response_code(400);
-    exit(json_encode(['error' => 'Invalid event']));
+    $headers = [];
+    foreach ($_SERVER as $key => $value) {
+        if (str_starts_with($key, 'HTTP_')) {
+            $name = str_replace('_', '-', substr($key, 5));
+            $headers[$name] = $value;
+        }
+    }
+
+    return $headers;
 }
 
-$data = $payload['data'];
+
+
+function logWebhook($title, $data = [])
+{
+    $logDir = __DIR__ . '/../../logs';
+    $logFile = $logDir . '/trucky-webhook.log';
+
+    if (!is_dir($logDir)) {
+        mkdir($logDir, 0755, true);
+    }
+
+    $entry = [
+        'time'    => date('Y-m-d H:i:s'),
+        'ip'      => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+        'title'   => $title,
+        'headers' => getRequestHeaders(),
+        'data'    => $data
+    ];
+
+    file_put_contents(
+        $logFile,
+        json_encode($entry, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . PHP_EOL . str_repeat('-', 80) . PHP_EOL,
+        FILE_APPEND
+    );
+}
+
+
+/* =========================
+   📥 RAW payload
+========================= */
+
+$rawPayload = file_get_contents('php://input');
+$payload = json_decode($rawPayload, true);
+
+
+if (!$rawPayload || empty($payload['event'])) {
+    http_response_code(200);
+    echo json_encode([
+        'status' => 'webhook verified'
+    ]);
+    exit;
+}
+
+logWebhook('Incoming request', [
+    'raw' => $rawPayload
+]);
+
+if (!$payload) {
+    http_response_code(400);
+    exit(json_encode(['error' => 'Invalid JSON']));
+}
+
+
+
+/* =========================
+   🔐 Validar firma webhook
+========================= */
+
+$headers = getallheaders();
+$signature = $headers['X-Trucky-Signature'] ?? '';
+
+$expectedSignature = 'sha256=' . hash_hmac(
+    'sha256',
+    $rawPayload,
+    env('TRUCKY_WEBHOOK_SECRET')
+);
+
+if (!hash_equals($expectedSignature, $signature)) {
+    http_response_code(401);
+    exit(json_encode(['error' => 'Invalid webhook signature']));
+}
 
 /* =========================
    🔐 Validar API Key
 ========================= */
 
-$headers = getallheaders();
 if (
     !isset($headers['X-Trucky-Api-Key']) ||
-    $headers['X-Trucky-Api-Key'] !== getenv('TRUCKY_API_KEY')
+    $headers['X-Trucky-Api-Key'] !== env('TRUCKY_API_KEY')
 ) {
     http_response_code(401);
-    exit(json_encode(['error' => 'Unauthorized']));
+    exit(json_encode(['error' => 'Invalid API key']));
 }
 
 /* =========================
-   👤 Buscar usuario
+   📡 Validar evento
+========================= */
+
+if (($payload['event'] ?? '') !== 'job.finished') {
+    http_response_code(200);
+    exit(json_encode(['status' => 'ignored']));
+}
+
+$data = $payload['data'];
+
+/* =========================
+   👤 Usuario
 ========================= */
 
 $stmt = $conn->prepare("
@@ -49,7 +136,7 @@ if (!$user) {
 $userId = $user['id'];
 
 /* =========================
-   🚫 Evitar duplicados
+   🚫 Duplicados
 ========================= */
 
 $stmt = $conn->prepare("
@@ -59,17 +146,17 @@ $stmt->bind_param("i", $data['job_id']);
 $stmt->execute();
 
 if ($stmt->get_result()->num_rows > 0) {
-    exit(json_encode(['status' => 'ignored', 'reason' => 'duplicate']));
+    exit(json_encode(['status' => 'duplicate']));
 }
 
 /* =========================
-   🧮 Calcular puntos
+   🧮 Puntos
 ========================= */
 
-$points = $data['distance_km'] * (int) getenv('POINTS_PER_KM');
+$points = (int) $data['distance_km'] * (int) env('POINTS_PER_KM', 1);
 
 /* =========================
-   💾 Insertar job
+   💾 Insert job
 ========================= */
 
 $stmt = $conn->prepare("
@@ -103,8 +190,18 @@ $stmt->execute();
 ========================= */
 
 $conn->query("
-    INSERT INTO user_stats (user_id, total_km, total_jobs, total_points, available_points, last_job_at)
-    VALUES ($userId, {$data['distance_km']}, 1, $points, $points, NOW())
+    INSERT INTO user_stats (
+        user_id, total_km, total_jobs,
+        total_points, available_points, last_job_at
+    )
+    VALUES (
+        $userId,
+        {$data['distance_km']},
+        1,
+        $points,
+        $points,
+        NOW()
+    )
     ON DUPLICATE KEY UPDATE
         total_km = total_km + {$data['distance_km']},
         total_jobs = total_jobs + 1,
