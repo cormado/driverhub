@@ -28,6 +28,10 @@ ADD COLUMN `discord_id` varchar(30) DEFAULT NULL,
 ADD COLUMN `trucksbook_name` varchar(50) DEFAULT NULL,
 ADD UNIQUE KEY `trucksbook_name` (`trucksbook_name`);
 
+ALTER TABLE users
+ADD COLUMN trucky_driver_id INT DEFAULT NULL,
+ADD UNIQUE KEY trucky_driver_id (trucky_driver_id);
+
 
 CREATE TABLE `event_ids` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -72,9 +76,6 @@ INSERT INTO `users` (`username`, `password`, `role`, `tmp_id`, `avatar_url`, `vt
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 
 
-------------------
--- TruckBooks Jobs
-------------------
 
 CREATE TABLE `trucksbook_jobs` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -105,9 +106,6 @@ CREATE TABLE `trucksbook_jobs` (
   CONSTRAINT `jobs_ibfk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-------------------
--- Estadisticas
-------------------
 
 CREATE TABLE `user_stats` (
   `user_id` int(11) NOT NULL,
@@ -122,9 +120,6 @@ CREATE TABLE `user_stats` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
--------------------
--- Logros
--------------------
 
 
 CREATE TABLE `achievements` (
@@ -139,11 +134,6 @@ CREATE TABLE `achievements` (
 
 
 
------------------------
--- Logros por usuarios
------------------------
-
-
 CREATE TABLE `user_achievements` (
   `user_id` int(11) NOT NULL,
   `achievement_id` int(11) NOT NULL,
@@ -153,10 +143,6 @@ CREATE TABLE `user_achievements` (
   CONSTRAINT `ua_ibfk_achievement` FOREIGN KEY (`achievement_id`) REFERENCES `achievements` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
-----------------------
--- Premios
-----------------------
 
 
 CREATE TABLE `rewards` (
@@ -174,9 +160,6 @@ CREATE TABLE `rewards` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-----------------------------------
--- Premios canjeados por usuarios
-----------------------------------
 
 CREATE TABLE `user_rewards` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -199,6 +182,3 @@ CREATE TABLE `user_rewards` (
 ALTER TABLE `user_rewards`
 ADD KEY `status` (`status`);
 
-
----------------------
-COMMIT;
