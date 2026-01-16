@@ -132,6 +132,14 @@ CREATE TABLE `achievements` (
   UNIQUE KEY `code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+ALTER TABLE `achievements`
+ADD COLUMN `active` tinyint(1) NOT NULL DEFAULT 1
+
+ALTER TABLE `achievements`
+ADD COLUMN `category` VARCHAR(50) DEFAULT 'General',
+ADD COLUMN `icon` VARCHAR(100) DEFAULT 'fas fa-trophy';
+
+
 
 
 CREATE TABLE `user_achievements` (
