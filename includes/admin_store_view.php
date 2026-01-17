@@ -2,56 +2,7 @@
 // Usamos el idioma definido o detectado
 $lang = isset($_GET['lang']) ? $_GET['lang'] : (isset($lang) ? $lang : 'es');
 
-$store_trans = [
-    'es' => [
-        'title_admin_panel' => 'ADMIN PANEL',
-        'title_gest_store' => 'GESTIÓN DE RECOMPENSAS',
-        'tab_logros' => 'LOGROS',
-        'tab_recompensas' => 'RECOMPENSAS',
-        'tab_usuarios' => 'USUARIOS',
-        'btn_create_logro' => 'CREAR LOGRO',
-        'btn_create_recompensa' => 'CREAR RECOMPENSA',
-        'col_codigo' => 'CÓDIGO',
-        'col_nombre' => 'NOMBRE',
-        'col_categoria' => 'CATEGORÍA',
-        'col_puntos' => 'PUNTOS',
-        'col_costo' => 'COSTO',
-        'col_stock' => 'STOCK',
-        'col_estado' => 'ESTADO',
-        'col_canjes' => 'CANJES',
-        'col_usuarios' => 'USUARIOS',
-        'col_acciones' => 'ACCIONES',
-        'lbl_activo' => 'Activo',
-        'lbl_guardar' => 'GUARDAR',
-        'lbl_cancelar' => 'CANCELAR',
-        'description' => 'Descripción'
-    ],
-    'en' => [
-        'title_admin_panel' => 'ADMIN PANEL',
-        'title_gest_store' => 'REWARDS MANAGEMENT',
-        'tab_logros' => 'ACHIEVEMENTS',
-        'tab_recompensas' => 'REWARDS',
-        'tab_usuarios' => 'USERS',
-        'btn_create_logro' => 'CREATE ACHIEVEMENT',
-        'btn_create_recompensa' => 'CREATE REWARD',
-        'col_codigo' => 'CODE',
-        'col_nombre' => 'NAME',
-        'col_categoria' => 'CATEGORY',
-        'col_puntos' => 'POINTS',
-        'col_costo' => 'COST',
-        'col_stock' => 'STOCK',
-        'col_estado' => 'STATUS',
-        'col_canjes' => 'REDEMPTIONS',
-        'col_usuarios' => 'USERS',
-        'col_acciones' => 'ACTIONS',
-        'lbl_activo' => 'Active',
-        'lbl_guardar' => 'SAVE',
-        'lbl_cancelar' => 'CANCEL',
-        'description' => 'Description'
-    ]
-];
 
-$t = isset($t) ? array_merge($t, $store_trans[$lang]) : $store_trans[$lang];
 
 if (!isset($conn)) {
     echo "<h3 style='color:red'><i class='fas fa-exclamation-triangle'></i> Error: Database connection lost.</h3>";
@@ -238,79 +189,81 @@ if (!isset($conn)) {
         border: 1px solid #ff4444;
         background: rgba(255, 68, 68, 0.05);
     }
+
     /* Alineación de botones de acción */
-.action-btns {
-    display: flex;
-    align-items: center; /* Centra verticalmente */
-    gap: 10px;
-    height: 100%;
-}
+    .action-btns {
+        display: flex;
+        align-items: center;
+        /* Centra verticalmente */
+        gap: 10px;
+        height: 100%;
+    }
 
-.action-btns form {
-    margin: 0;
-    padding: 0;
-    display: flex;
-    align-items: center;
-}
+    .action-btns form {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        align-items: center;
+    }
 
-.btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    margin: 0;
-    line-height: 1;
-}
+    .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        margin: 0;
+        line-height: 1;
+    }
 
-/* Estilo para el tag de estado basado en tus imágenes */
-.status-tag {
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.7rem;
-    font-weight: bold;
-    display: inline-block;
-    text-align: center;
-    min-width: 70px;
-}
+    /* Estilo para el tag de estado basado en tus imágenes */
+    .status-tag {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        display: inline-block;
+        text-align: center;
+        min-width: 70px;
+    }
 
-.status-tag.active {
-    border: 1px solid #00ff88;
-    color: #00ff88;
-    background: rgba(0, 255, 136, 0.1);
-}
+    .status-tag.active {
+        border: 1px solid #00ff88;
+        color: #00ff88;
+        background: rgba(0, 255, 136, 0.1);
+    }
 
-.status-tag.inactive {
-    border: 1px solid #ff4444;
-    color: #ff4444;
-    background: rgba(255, 68, 68, 0.1);
-}
+    .status-tag.inactive {
+        border: 1px solid #ff4444;
+        color: #ff4444;
+        background: rgba(255, 68, 68, 0.1);
+    }
 </style>
 
 <div class="vintara-admin-container">
     <div class="admin-tabs">
-        <button class="tab-btn active" onclick="openAdminTab(event, 'gest-logros')"><?php echo $t['tab_logros']; ?></button>
-        <button class="tab-btn" onclick="openAdminTab(event, 'gest-recompensas')"><?php echo $t['tab_recompensas']; ?></button>
+        <button class="tab-btn active" onclick="openAdminTab(event, 'gest-logros')"><?php echo $t['store_admin_tab_logros']; ?></button>
+        <button class="tab-btn" onclick="openAdminTab(event, 'gest-recompensas')"><?php echo $t['store_admin_tab_recompensas']; ?></button>
     </div>
 
     <div id="gest-logros" class="tab-content" style="display: block;">
         <div class="section-header">
             <h3>GESTIONAR LOGROS</h3>
             <button class="btn-create" onclick="toggleModal('modalLogro', true)">
-                <i class="fas fa-plus"></i> <?php echo $t['btn_create_logro']; ?>
+                <i class="fas fa-plus"></i> <?php echo $t['store_admin_btn_create_logro']; ?>
             </button>
         </div>
         <table class="admin-table">
             <thead>
                 <tr>
-                    <th><?php echo $t['col_codigo']; ?></th>
-                    <th><?php echo $t['col_nombre']; ?></th>
-                    <th><?php echo $t['col_categoria']; ?></th>
-                    <th><?php echo $t['col_puntos']; ?></th>
-                    <th><?php echo $t['col_estado']; ?></th>
-                    <th><?php echo $t['col_usuarios']; ?></th>
-                    <th><?php echo $t['col_acciones']; ?></th>
+                    <th><?php echo $t['store_admin_col_codigo']; ?></th>
+                    <th><?php echo $t['store_admin_col_nombre']; ?></th>
+                    <th><?php echo $t['store_admin_col_categoria']; ?></th>
+                    <th><?php echo $t['store_admin_col_puntos']; ?></th>
+                    <th><?php echo $t['store_admin_col_estado']; ?></th>
+                    <th><?php echo $t['store_admin_col_usuarios']; ?></th>
+                    <th><?php echo $t['store_admin_col_acciones']; ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -354,19 +307,19 @@ if (!isset($conn)) {
         <div class="section-header">
             <h3>GESTIONAR RECOMPENSAS</h3>
             <button class="btn-create" onclick="toggleModal('modalRecompensa', true)">
-                <i class="fas fa-plus"></i> <?php echo $t['btn_create_recompensa']; ?>
+                <i class="fas fa-plus"></i> <?php echo $t['store_admin_btn_create_recompensa']; ?>
             </button>
         </div>
         <table class="admin-table">
             <thead>
                 <tr>
-                    <th><?php echo $t['col_codigo']; ?></th>
-                    <th><?php echo $t['col_nombre']; ?></th>
-                    <th><?php echo $t['col_costo']; ?></th>
-                    <th><?php echo $t['col_stock']; ?></th>
-                    <th><?php echo $t['col_estado']; ?></th>
-                    <th><?php echo $t['col_canjes']; ?></th>
-                    <th><?php echo $t['col_acciones']; ?></th>
+                    <th><?php echo $t['store_admin_col_codigo']; ?></th>
+                    <th><?php echo $t['store_admin_col_nombre']; ?></th>
+                    <th><?php echo $t['store_admin_col_costo']; ?></th>
+                    <th><?php echo $t['store_admin_col_stock']; ?></th>
+                    <th><?php echo $t['store_admin_col_estado']; ?></th>
+                    <th><?php echo $t['store_admin_col_canjes']; ?></th>
+                    <th><?php echo $t['store_admin_col_acciones']; ?></th>
                 </tr>
             </thead>
             <tbody>

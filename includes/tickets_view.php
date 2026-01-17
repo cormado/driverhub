@@ -1,64 +1,7 @@
 <?php
 // includes/tickets_view.php
 
-// 1. DICCIONARIO DE TRADUCCIÓN PARA TICKETS
-$lang_code = isset($_GET['lang']) ? $_GET['lang'] : 'es';
 
-$trans_ticket = [
-    'es' => [
-        'title_list' => 'MIS TICKETS',
-        'btn_new' => 'NUEVO TICKET',
-        'no_tickets' => 'No hay tickets recientes.',
-        'back' => 'VOLVER',
-        'author' => 'Autor:',
-        'btn_close' => 'CERRAR TICKET',
-        'btn_archive' => 'ARCHIVAR',
-        'btn_delete' => 'BORRAR',
-        'status_open' => 'ABIERTO',
-        'status_closed' => 'RESUELTO',
-        'status_process' => 'EN PROCESO',
-        'placeholder_reply' => 'Escribe tu respuesta...',
-        'locked' => 'TICKET CERRADO',
-        'modal_new_title' => 'NUEVO TICKET',
-        'modal_subject' => 'Asunto',
-        'modal_desc' => 'Detalles...',
-        'modal_create' => 'CREAR TICKET',
-        'modal_del_title' => 'ELIMINAR TICKET',
-        'modal_del_confirm' => '¿Estás seguro de que deseas eliminar este ticket permanentemente?',
-        'modal_del_warn' => 'Esta acción no se puede deshacer.',
-        'btn_cancel' => 'CANCELAR',
-        'btn_confirm' => 'SI, BORRAR',
-        'loading' => 'PROCESANDO...'
-    ],
-    'en' => [
-        'title_list' => 'MY TICKETS',
-        'btn_new' => 'NEW TICKET',
-        'no_tickets' => 'No recent tickets.',
-        'back' => 'BACK',
-        'author' => 'Author:',
-        'btn_close' => 'CLOSE TICKET',
-        'btn_archive' => 'ARCHIVE',
-        'btn_delete' => 'DELETE',
-        'status_open' => 'OPEN',
-        'status_closed' => 'RESOLVED',
-        'status_process' => 'IN PROGRESS',
-        'placeholder_reply' => 'Write your reply...',
-        'locked' => 'TICKET CLOSED',
-        'modal_new_title' => 'NEW TICKET',
-        'modal_subject' => 'Subject',
-        'modal_desc' => 'Details...',
-        'modal_create' => 'CREATE TICKET',
-        'modal_del_title' => 'DELETE TICKET',
-        'modal_del_confirm' => 'Are you sure you want to delete this ticket permanently?',
-        'modal_del_warn' => 'This action cannot be undone.',
-        'btn_cancel' => 'CANCEL',
-        'btn_confirm' => 'YES, DELETE',
-        'loading' => 'PROCESSING...'
-    ]
-];
-
-if (!isset($trans_ticket[$lang_code])) $lang_code = 'en';
-$tt = $trans_ticket[$lang_code];
 
 // 2. VERIFICACIÓN DE CONEXIÓN
 if (!isset($conn)) {
@@ -293,25 +236,25 @@ $my_role = $_SESSION['role'];
         $res_ticket = $conn->query($sql_t);
 
         if (!$res_ticket || $res_ticket->num_rows == 0) {
-            echo "<div style='padding:40px; text-align:center;'><i class='fas fa-times-circle' style='font-size:2rem; margin-bottom:10px;'></i><br>Ticket not found. <a href='?view=tickets&lang=$lang_code' style='color:#00ff9d'>{$tt['back']}</a></div>";
+            echo "<div style='padding:40px; text-align:center;'><i class='fas fa-times-circle' style='font-size:2rem; margin-bottom:10px;'></i><br>Ticket not found. <a href='?view=tickets&lang=$lang_code' style='color:#00ff9d'>{$t['ticket_back']}</a></div>";
         } else {
             $ticket = $res_ticket->fetch_assoc();
             $msgs = $conn->query("SELECT tm.*, u.username FROM ticket_messages tm JOIN users u ON tm.user_id = u.id WHERE tm.ticket_id = $t_id ORDER BY tm.created_at ASC");
     ?>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <a href="?view=tickets&lang=<?php echo $lang_code; ?>" style="color:#888; text-decoration:none;"><i class="fas fa-arrow-left"></i> <?php echo $tt['back']; ?></a>
+                <a href="?view=tickets&lang=<?php echo $lang_code; ?>" style="color:#888; text-decoration:none;"><i class="fas fa-arrow-left"></i> <?php echo $t['ticket_back']; ?></a>
                 <div style="display:flex; gap:10px;">
                     <?php if ($ticket['status'] != 'resuelto' && $ticket['status'] != 'archived'): ?>
                         <button onclick="accionTicket(<?php echo $t_id; ?>, 'close')" class="btn-action" style="background:rgba(255,0,85,0.2); color:#ff0055; border:1px solid #ff0055;">
-                            <i class="fas fa-check"></i> <?php echo $tt['btn_close']; ?>
+                            <i class="fas fa-check"></i> <?php echo $t['ticket_btn_close']; ?>
                         </button>
                     <?php endif; ?>
                     <?php if ($ticket['status'] == 'resuelto'): ?>
                         <button onclick="accionTicket(<?php echo $t_id; ?>, 'archive')" class="btn-action" style="background:#333;">
-                            <i class="fas fa-archive"></i> <?php echo $tt['btn_archive']; ?>
+                            <i class="fas fa-archive"></i> <?php echo $t['ticket_btn_archive']; ?>
                         </button>
                         <button onclick="confirmarBorrado(<?php echo $t_id; ?>)" class="btn-action" style="background:#ff0055;">
-                            <i class="fas fa-trash"></i> <?php echo $tt['btn_delete']; ?>
+                            <i class="fas fa-trash"></i> <?php echo $t['ticket_btn_delete']; ?>
                         </button>
                     <?php endif; ?>
                 </div>
@@ -323,7 +266,7 @@ $my_role = $_SESSION['role'];
                         <i class="fas fa-hashtag" style="color:#444; font-size:0.8em;"></i><?php echo $ticket['id']; ?> <?php echo $ticket['subject']; ?>
                     </h2>
                     <div style="font-size:0.8rem; color:#888; margin-top:5px;">
-                        <i class="fas fa-user"></i> <?php echo $tt['author']; ?> <span style="color:#9d4edd"><?php echo $ticket['author_name']; ?></span>
+                        <i class="fas fa-user"></i> <?php echo $t['ticket_author']; ?> <span style="color:#9d4edd"><?php echo $ticket['author_name']; ?></span>
                     </div>
                 </div>
                 <div class="chat-msgs" id="chatBox">
@@ -340,12 +283,12 @@ $my_role = $_SESSION['role'];
                     <form id="chatForm" class="chat-input-area">
                         <input type="hidden" name="action" value="reply">
                         <input type="hidden" name="ticket_id" value="<?php echo $t_id; ?>">
-                        <textarea name="message" class="chat-input" placeholder="<?php echo $tt['placeholder_reply']; ?>" required></textarea>
+                        <textarea name="message" class="chat-input" placeholder="<?php echo $t['ticket_placeholder_reply']; ?>" required></textarea>
                         <button type="submit" style="width:50px; background:#00ff9d; border:none; cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
                     </form>
                 <?php else: ?>
                     <div style="padding:15px; text-align:center; background:rgba(255,0,0,0.2); color:#ff0055;">
-                        <i class="fas fa-lock"></i> <?php echo $tt['locked']; ?>
+                        <i class="fas fa-lock"></i> <?php echo $t['ticket_locked']; ?>
                     </div>
                 <?php endif; ?>
             </div>
@@ -357,9 +300,9 @@ $my_role = $_SESSION['role'];
         $lista = $conn->query($sql);
         ?>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-            <h2 style="font-family:'Kanit'; font-style:italic;"><?php echo $tt['title_list']; ?></h2>
+            <h2 style="font-family:'Kanit'; font-style:italic;"><?php echo $t['ticket_title_list']; ?></h2>
             <button onclick="document.getElementById('modalNuevo').style.display='flex'" class="btn-create">
-                <i class="fas fa-plus"></i> <?php echo $tt['btn_new']; ?>
+                <i class="fas fa-plus"></i> <?php echo $t['ticket_btn_new']; ?>
             </button>
         </div>
         <div>
@@ -379,15 +322,15 @@ $my_role = $_SESSION['role'];
                                 <?php
                                 $raw_st = strtolower($row['status']);
                                 if ($raw_st == 'abierto') {
-                                    $st_txt = $tt['status_open'];
+                                    $st_txt = $t['ticket_status_open'];
                                     $cls = 'st-open';
                                     $icon_st = 'fa-envelope-open';
                                 } elseif ($raw_st == 'resuelto') {
-                                    $st_txt = $tt['status_closed'];
+                                    $st_txt = $t['ticket_status_closed'];
                                     $cls = 'st-closed';
                                     $icon_st = 'fa-check-circle';
                                 } else {
-                                    $st_txt = $tt['status_process'];
+                                    $st_txt = $t['ticket_status_process'];
                                     $cls = 'st-process';
                                     $icon_st = 'fa-spinner';
                                 }
@@ -400,7 +343,7 @@ $my_role = $_SESSION['role'];
             <?php else: ?>
                 <div style="padding:40px; text-align:center; border:1px dashed #333; color:#666;">
                     <i class="far fa-folder-open" style="font-size:2rem; margin-bottom:10px;"></i><br>
-                    <?php echo $tt['no_tickets']; ?>
+                    <?php echo $t['ticket_no_tickets']; ?>
                 </div>
             <?php endif; ?>
         </div>
@@ -411,35 +354,35 @@ $my_role = $_SESSION['role'];
 <div id="modalNuevo" class="sys-modal">
     <div class="sys-modal-box">
         <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-            <h3 style="font-family:'Kanit'; margin:0; color:white;"><?php echo $tt['modal_new_title']; ?></h3>
+            <h3 style="font-family:'Kanit'; margin:0; color:white;"><?php echo $t['ticket_modal_new_title']; ?></h3>
             <span onclick="document.getElementById('modalNuevo').style.display='none'" style="cursor:pointer; color:#888;"><i class="fas fa-times"></i></span>
         </div>
         <form id="formNuevo">
             <input type="hidden" name="action" value="create">
-            <input type="text" name="subject" class="chat-input" style="width:100%; margin-bottom:15px;" placeholder="<?php echo $tt['modal_subject']; ?>" required>
-            <textarea name="message" class="chat-input" style="width:100%; height:100px; margin-bottom:15px;" placeholder="<?php echo $tt['modal_desc']; ?>" required></textarea>
-            <button type="submit" class="btn-create" style="width:100%; justify-content:center;"><?php echo $tt['modal_create']; ?></button>
+            <input type="text" name="subject" class="chat-input" style="width:100%; margin-bottom:15px;" placeholder="<?php echo $t['ticket_modal_subject']; ?>" required>
+            <textarea name="message" class="chat-input" style="width:100%; height:100px; margin-bottom:15px;" placeholder="<?php echo $t['ticket_modal_desc']; ?>" required></textarea>
+            <button type="submit" class="btn-create" style="width:100%; justify-content:center;"><?php echo $t['ticket_modal_create']; ?></button>
         </form>
     </div>
 </div>
 
 <div id="modalBorrar" class="sys-modal">
     <div class="sys-modal-box modal-danger">
-        <h3 style="font-family:'Kanit'; margin-top:0;"><i class="fas fa-exclamation-triangle"></i> <?php echo $tt['modal_del_title']; ?></h3>
+        <h3 style="font-family:'Kanit'; margin-top:0;"><i class="fas fa-exclamation-triangle"></i> <?php echo $t['ticket_modal_del_title']; ?></h3>
         <p style="color:#ddd; font-size:0.9rem; line-height:1.5;">
-            <?php echo $tt['modal_del_confirm']; ?> <br>
-            <span style="color:#666; font-size:0.8rem;"><?php echo $tt['modal_del_warn']; ?></span>
+            <?php echo $t['ticket_modal_del_confirm']; ?> <br>
+            <span style="color:#666; font-size:0.8rem;"><?php echo $t['ticket_modal_del_warn']; ?></span>
         </p>
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:25px;">
-            <button onclick="cerrarModalBorrar()" class="btn-cancel"><?php echo $tt['btn_cancel']; ?></button>
-            <button id="btnConfirmarBorrado" class="btn-danger-confirm"><?php echo $tt['btn_confirm']; ?></button>
+            <button onclick="cerrarModalBorrar()" class="btn-cancel"><?php echo $t['ticket_btn_cancel']; ?></button>
+            <button id="btnConfirmarBorrado" class="btn-danger-confirm"><?php echo $t['ticket_btn_confirm']; ?></button>
         </div>
     </div>
 </div>
 
 <div id="modalCarga" class="sys-modal">
     <div class="sys-modal-box" style="text-align:center;">
-        <h3 style="color:white; font-family:'Kanit';"><?php echo $tt['loading']; ?></h3>
+        <h3 style="color:white; font-family:'Kanit';"><?php echo $t['ticket_loading']; ?></h3>
         <div class="loader"></div>
     </div>
 </div>

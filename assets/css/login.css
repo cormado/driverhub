@@ -1,0 +1,190 @@
+:root {
+    --bg-primary: #0a0a0a;
+    --text-main: #ffffff;
+    --text-muted: #a0a0a0;
+    --accent-purple: #9d4edd;
+    --accent-red: #ff0055;
+    --border-light: rgba(255, 255, 255, 0.1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-main);
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    position: relative; 
+}
+
+/* --- PRELOADER --- */
+#preloader {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: var(--bg-primary); z-index: 9999;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+
+.loader-circle {
+    width: 60px; height: 60px;
+    border: 4px solid rgba(255, 255, 255, 0.1); border-top: 4px solid var(--accent-purple);
+    border-radius: 50%; animation: spin 1s linear infinite;
+    margin-bottom: 20px; box-shadow: 0 0 20px rgba(157, 78, 221, 0.3);
+}
+
+.loader-text {
+    font-family: 'Kanit', sans-serif; font-size: 1.2rem; letter-spacing: 5px;
+    text-transform: uppercase; animation: pulse 1.5s ease-in-out infinite;
+}
+
+.hide-loader { opacity: 0; visibility: hidden; pointer-events: none; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+/* --- HEADER --- */
+header {
+    position: fixed; top: 0; width: 100%; padding: 1.5rem 5%;
+    display: flex; justify-content: space-between; align-items: center; z-index: 100;
+    backdrop-filter: blur(5px);
+}
+
+.logo-text {
+    font-family: 'Kanit', sans-serif; font-weight: 800; font-style: italic;
+    font-size: 2rem; color: #fff; text-transform: uppercase; letter-spacing: -1px;
+}
+.logo-text span { color: var(--accent-purple); }
+
+.header-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.back-btn {
+    padding: 0.5rem 1.5rem; border: 1px solid var(--accent-purple); color: #fff;
+    text-decoration: none; font-family: 'Kanit', sans-serif; text-transform: uppercase;
+    font-weight: 600; background: rgba(0,0,0,0.5); transition: 0.3s;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+.back-btn:hover { background: var(--accent-purple); box-shadow: 0 0 15px var(--accent-purple); }
+
+.lang-btn {
+    background: transparent; border: 1px solid #555; color: #aaa;
+    padding: 0.5rem 1rem; cursor: pointer; font-family: 'Kanit', sans-serif;
+    transition: 0.3s;
+}
+.lang-btn:hover { color: #fff; border-color: var(--accent-purple); }
+
+/* --- LOGIN AREA --- */
+.login-wrapper {
+    flex: 1; display: flex; justify-content: center; align-items: center; position: relative;
+    padding-top: 140px; padding-bottom: 50px;
+    background: radial-gradient(circle at center, rgba(138,43,226,0.15) 0%, #0a0a0a 80%), 
+                url('../../assets/img/header.png') center/cover no-repeat; /* Updated path */
+}
+
+.login-wrapper::before {
+    content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
+    background: rgba(10, 10, 10, 0.6); z-index: 0;
+}
+
+.glass-login {
+    background: rgba(10, 10, 10, 0.85); border: 1px solid rgba(255,255,255,0.1);
+    padding: 4rem 3rem; width: 100%; max-width: 480px;
+    backdrop-filter: blur(20px); position: relative; z-index: 10;
+    box-shadow: 0 0 40px rgba(0,0,0,0.8);
+    border-bottom: 3px solid var(--accent-purple);
+    opacity: 0; transform: translateY(50px);
+    animation: hudEntry 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards 0.5s;
+}
+
+@keyframes hudEntry { to { opacity: 1; transform: translateY(0); } }
+
+.login-title {
+    font-family: 'Kanit', sans-serif; font-size: 3rem; text-align: center;
+    text-transform: uppercase; margin-bottom: 2rem; color: #fff; font-style: italic;
+}
+
+.login-title span { 
+    color: var(--accent-purple); position: relative; display: inline-block;
+    animation: chromaticMove 3s infinite;
+    text-shadow: 2px 0 0 rgba(255,0,0,0.7), -2px 0 0 rgba(0,0,255,0.7);
+}
+
+@keyframes chromaticMove {
+    0% { text-shadow: 2px 0 0 rgba(255,0,0,0.7), -2px 0 0 rgba(0,0,255,0.7); transform: translate(0); }
+    2% { text-shadow: 2px 0 0 rgba(255,0,0,0.7), -2px 0 0 rgba(0,0,255,0.7); transform: translate(-2px, 1px); }
+    4% { text-shadow: 2px 0 0 rgba(255,0,0,0.7), -2px 0 0 rgba(0,0,255,0.7); transform: translate(0); }
+    100% { text-shadow: 2px 0 0 rgba(255,0,0,0.7), -2px 0 0 rgba(0,0,255,0.7); transform: translate(0); }
+}
+
+.error-box {
+    background: rgba(255, 0, 0, 0.1); border: 1px solid #ff4d4d; color: #ff4d4d;
+    padding: 10px; margin-bottom: 20px; text-align: center;
+    font-family: 'Kanit', sans-serif; font-size: 0.9rem; text-transform: uppercase;
+    box-shadow: 0 0 10px rgba(255,0,0,0.2); animation: pulseRed 2s infinite;
+}
+@keyframes pulseRed { 0%,100% {opacity:1;} 50% {opacity:0.7;} }
+
+.form-group { margin-bottom: 2rem; }
+.form-label {
+    display: block; margin-bottom: 0.8rem; font-family: 'Kanit', sans-serif;
+    font-size: 1rem; color: var(--accent-purple); text-transform: uppercase;
+    letter-spacing: 2px; font-weight: 600;
+}
+
+.input-group-inner { position: relative; width: 100%; }
+.form-input {
+    width: 100%; padding: 1.2rem 1.2rem; padding-right: 3rem;
+    background: rgba(0, 0, 0, 0.4); border: 2px solid #333; color: #fff;
+    font-family: 'Montserrat', sans-serif; font-size: 1.1rem;
+    transition: all 0.1s ease;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 15px 100%, 0 calc(100% - 15px));
+}
+.form-input:focus {
+    outline: none; border-color: var(--accent-purple);
+    background: rgba(20, 0, 20, 0.6); box-shadow: 0 0 20px rgba(157, 78, 221, 0.3);
+}
+.form-input.vibrating { animation: inputShake 0.2s linear infinite; border-color: #fff !important; }
+@keyframes inputShake { 0% { transform: translate(0px, 0px); } 25% { transform: translate(2px, -2px); } 50% { transform: translate(-2px, 2px); } 75% { transform: translate(2px, 2px); } 100% { transform: translate(-2px, -2px); } }
+
+.input-icon {
+    position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+    color: #555; font-size: 1.2rem; pointer-events: none; transition: 0.3s;
+}
+.form-input:focus + .input-icon { color: var(--accent-purple); text-shadow: 0 0 10px var(--accent-purple); }
+
+.submit-btn {
+    width: 100%; padding: 1.5rem; margin-top: 1rem;
+    background: var(--text-main); color: #000; border: none;
+    font-family: 'Kanit', sans-serif; text-transform: uppercase;
+    font-size: 1.5rem; font-weight: 900; font-style: italic; cursor: pointer;
+    position: relative; overflow: hidden;
+    clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+    transition: 0.3s;
+}
+.submit-btn:hover {
+    background: var(--accent-purple); color: #fff;
+    box-shadow: 0 0 30px var(--accent-purple); transform: scale(1.02);
+}
+
+/* --- PARTÍCULAS --- */
+.particle {
+    position: absolute; pointer-events: none; width: 6px; height: 6px;
+    border-radius: 50%; animation: particleExplosion 0.8s ease-out forwards; z-index: 1000;
+}
+@keyframes particleExplosion { 0% { opacity: 1; transform: translate(0, 0) scale(1); box-shadow: 0 0 10px currentColor; } 100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0); } }
+
+/* --- FOOTER --- */
+footer { background: #050505; padding: 3rem; text-align: center; border-top: 1px solid #222; z-index: 10; }
+.social-links { margin: 2rem 0; }
+.social-links a { color: var(--text-muted); font-size: 1.8rem; margin: 0 1rem; transition: all 0.3s; }
+.social-links a:hover { color: var(--accent-purple); transform: translateY(-3px); }
+.footer-links { margin-top: 2rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); }
+.footer-links a { color: var(--text-muted); text-decoration: none; margin: 0 1rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; transition: color 0.3s; }
+.footer-links a:hover { color: #fff; text-decoration: underline; }
+
+@media (max-width: 768px) { .glass-login { padding: 2rem; max-width: 90%; } .login-title { font-size: 2.2rem; } }

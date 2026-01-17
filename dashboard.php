@@ -4,94 +4,7 @@ error_reporting(0);
 require 'includes/db.php';
 require 'includes/api.php'; // Aquí se cargan $evento_destacado y $eventos_asistencia
 
-// --- 1. IDIOMA ---
-$lang = isset($_GET['lang']) ? $_GET['lang'] : 'en';
-$trans = [
-    'es' => [
-        'nav_admin' => 'Admin',
-        'nav_manage_events' => 'Gestionar Eventos',
-        'nav_users' => 'Usuarios',
-        'nav_store_manage' => 'Gestión de Tienda',
-        'nav_menu' => 'Menú',
-        'nav_ops' => 'Centro de Operaciones',
-        'nav_workshop' => 'Taller Vintara',
-        'nav_tickets' => 'Soporte / Tickets',
-        'nav_store' => 'Tienda',
-        'nav_members' => 'Miembros',
-        'nav_recruiting' => 'Recluta',
-        'logout' => 'Cerrar Sesión',
-        'title_ops' => 'CENTRO DE OPERACIONES',
-        'title_events' => 'GESTOR DE EVENTOS',
-        'title_users' => 'GESTIÓN DE USUARIOS',
-        'title_store_maange' => 'GESTIÓN DE TIENDA',
-        'title_workshop' => 'TALLER OFICIAL',
-        'title_tickets' => 'SOPORTE',
-        'title_store' => 'TIENDA',
-        'stats_total' => 'MIEMBROS TOTALES',
-        'stats_verified' => 'VERIFICADA',
-        'event_official' => '★ PRÓXIMO EVENTO OFICIAL',
-        'event_agenda' => 'Agenda de Asistencia',
-        'event_invited' => 'Convoys Invitados',
-        'event_none' => 'No hay eventos en la agenda.',
-        'workshop_paint' => 'Pintura Oficial',
-        'workshop_truck' => 'CAMIÓN',
-        'workshop_trailer' => 'REMOLQUE',
-        'workshop_tag' => 'Tag Oficial',
-        'workshop_id' => 'Identificación',
-        'workshop_guide' => 'GUIA DEL CONDUCTOR',
-        'workshop_soon' => 'GUIA: PROXIMAMENTE',
-        'store_construction' => 'En Construcción',
-        'store_soon' => 'El módulo de Tienda Vintara estará disponible pronto.',
-        'ban_denied' => 'ACCESO DENEGADO',
-        'ban_suspended' => 'CUENTA SUSPENDIDA',
-        'ban_reason' => 'Motivo:',
-        'ban_release' => 'Liberación:'
-    ],
-    'en' => [
-        'nav_admin' => 'Admin',
-        'nav_manage_events' => 'Manage Events',
-        'nav_users' => 'Users',
-        'nav_store_manage' => 'Manage Store',
-        'nav_menu' => 'Menu',
-        'nav_ops' => 'Operations Center',
-        'nav_workshop' => 'Vintara Workshop',
-        'nav_tickets' => 'Support / Tickets',
-        'nav_store' => 'Store',
-        'nav_members' => 'Members',
-        'nav_recruiting' => 'Recruiting',
-        'logout' => 'Logout',
-        'title_ops' => 'OPERATIONS CENTER',
-        'title_events' => 'EVENT MANAGER',
-        'title_users' => 'USER MANAGEMENT',
-        'title_store_maange' => 'STORE MANAGEMENT',
-        'title_workshop' => 'OFFICIAL WORKSHOP',
-        'title_tickets' => 'SUPPORT',
-        'title_store' => 'STORE',
-        'stats_total' => 'TOTAL MEMBERS',
-        'stats_verified' => 'VERIFIED',
-        'event_official' => '★ NEXT OFFICIAL EVENT',
-        'event_agenda' => 'Attendance Agenda',
-        'event_invited' => 'Guest Convoys',
-        'event_none' => 'No events in the agenda.',
-        'workshop_paint' => 'Official Paintjob',
-        'workshop_truck' => 'TRUCK',
-        'workshop_trailer' => 'TRAILER',
-        'workshop_tag' => 'Official Tag',
-        'workshop_id' => 'Identification',
-        'workshop_guide' => 'DRIVER GUIDE',
-        'workshop_soon' => 'GUIDE: COMING SOON',
-        'store_construction' => 'Under Construction',
-        'store_soon' => 'Vintara Store module will be available soon.',
-        'ban_denied' => 'ACCESS DENIED',
-        'ban_suspended' => 'ACCOUNT SUSPENDID',
-        'ban_reason' => 'Reason:',
-        'ban_release' => 'Release:'
-    ]
-];
-if (!array_key_exists($lang, $trans)) {
-    $lang = 'en';
-}
-$t = $trans[$lang];
+require_once 'includes/i18n.php';
 
 // 2. SEGURIDAD
 if (!isset($_SESSION['user_id'])) {
@@ -202,7 +115,7 @@ $mi_tmp_id = $datos_usuario['tmp_id'] ? $datos_usuario['tmp_id'] : '---';
     <title>Vintara Terminal</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,600;0,800;1,800&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="assets/css/dashboard.css">
     <script>
         function cambiarIdioma(nuevoLang) {
             const url = new URL(window.location.href);
