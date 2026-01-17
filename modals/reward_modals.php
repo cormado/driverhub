@@ -159,27 +159,27 @@
             <input type="hidden" name="id" id="logroId">
 
             <div class="form-group">
-                <label><?php echo $t['col_codigo']; ?></label>
+                <label><?php echo $t['store_admin_col_codigo']; ?></label>
                 <input type="text" name="code" id="logroCode" placeholder="EJ: SAFE_DRIVER_100" required>
             </div>
 
             <div class="form-group">
-                <label><?php echo $t['col_nombre']; ?></label>
+                <label><?php echo $t['store_admin_col_nombre']; ?></label>
                 <input type="text" name="name" id="logroName" placeholder="Conductor Seguro" required>
             </div>
 
             <div class="form-group">
-                <label><?php echo $t['description']; ?></label>
+                <label><?php echo $t['store_admin_col_descripcion']; ?></label>
                 <textarea name="description" id="logroDesc" rows="3" placeholder="Descripción del logro..."></textarea>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label><?php echo $t['col_puntos']; ?></label>
+                    <label><?php echo $t['store_admin_col_puntos']; ?></label>
                     <input type="number" name="points" id="logroPoints" min="0" required>
                 </div>
                 <div class="form-group">
-                    <label><?php echo $t['col_categoria']; ?></label>
+                    <label><?php echo $t['store_admin_col_categoria']; ?></label>
                     <input type="text" name="category" id="logroCategory" placeholder="Seguridad">
                 </div>
             </div>
@@ -193,13 +193,13 @@
             <div class="form-group">
                 <label>
                     <input type="checkbox" name="active" id="logroActive" value="1" checked style="width: auto;">
-                    <?php echo $t['lbl_activo']; ?>
+                    <?php echo $t['store_admin_lbl_activo']; ?>
                 </label>
             </div>
 
             <div class="modal-footer">
-                <button type="submit" class="btn-modal-save"><?php echo $t['lbl_guardar']; ?></button>
-                <button type="button" class="btn-modal-cancel" onclick="toggleModal('modalLogro', false)"><?php echo $t['lbl_cancelar']; ?></button>
+                <button type="submit" class="btn-modal-save"><?php echo $t['store_admin_lbl_guardar']; ?></button>
+                <button type="button" class="btn-modal-cancel" onclick="toggleModal('modalLogro', false)"><?php echo $t['store_admin_lbl_cancelar']; ?></button>
             </div>
         </form>
     </div>
@@ -207,33 +207,33 @@
 
 <div id="modalRecompensa" class="vintara-modal">
     <div class="modal-content">
-        <h2 id="modalRewardTitle"><?php echo $t['btn_create_recompensa']; ?></h2>
+        <h2 id="modalRewardTitle"><?php echo $t['store_admin_btn_create_recompensa']; ?></h2>
         <form class="vintara-form" action="actions/manage_rewards.php" method="POST">
             <input type="hidden" name="action" id="rewardAction" value="create">
             <input type="hidden" name="id" id="rewardId">
 
             <div class="form-group">
-                <label><?php echo $t['col_codigo']; ?></label>
+                <label><?php echo $t['store_admin_col_codigo']; ?></label>
                 <input type="text" name="code" id="rewardCode" placeholder="GIFT_CARD_50" required>
             </div>
 
             <div class="form-group">
-                <label><?php echo $t['col_nombre']; ?></label>
+                <label><?php echo $t['store_admin_col_nombre']; ?></label>
                 <input type="text" name="name" id="rewardName" placeholder="Tarjeta de Regalo $50" required>
             </div>
 
             <div class="form-group">
-                <label><?php echo $t['description']; ?></label>
+                <label><?php echo $t['store_admin_col_descripcion']; ?></label>
                 <textarea name="description" id="rewardDesc" rows="3" placeholder="Descripción de la recompensa..."></textarea>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label><?php echo $t['col_costo']; ?> (Pts)</label>
+                    <label><?php echo $t['store_admin_col_costo']; ?> (Pts)</label>
                     <input type="number" name="cost" id="rewardCost" min="0" required>
                 </div>
                 <div class="form-group">
-                    <label><?php echo $t['col_stock']; ?></label>
+                    <label><?php echo $t['store_admin_col_stock']; ?></label>
                     <input type="number" name="stock" id="rewardStock" min="0" required>
                 </div>
             </div>
@@ -241,13 +241,13 @@
             <div class="form-group">
                 <label>
                     <input type="checkbox" name="active" id="rewardActive" value="1" checked style="width: auto;">
-                    <?php echo $t['lbl_activo']; ?>
+                    <?php echo $t['store_admin_lbl_activo']; ?>
                 </label>
             </div>
 
             <div class="modal-footer">
-                <button type="submit" class="btn-modal-save"><?php echo $t['lbl_guardar']; ?></button>
-                <button type="button" class="btn-modal-cancel" onclick="toggleModal('modalRecompensa', false)"><?php echo $t['lbl_cancelar']; ?></button>
+                <button type="submit" class="btn-modal-save"><?php echo $t['store_admin_lbl_guardar']; ?></button>
+                <button type="button" class="btn-modal-cancel" onclick="toggleModal('modalRecompensa', false)"><?php echo $t['store_admin_lbl_cancelar']; ?></button>
             </div>
         </form>
     </div>

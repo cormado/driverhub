@@ -5,6 +5,8 @@
 ![Composer](https://img.shields.io/badge/Composer-Required-885630?logo=composer&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-Active-success)
 ![License](https://img.shields.io/badge/License-Private-red)
+[![Contributors](https://img.shields.io/github/contributors/cormado/driverhub)](https://github.com/cormado/driverhub/graphs/contributors)
+
 
 **DriverHub** es la plataforma central de gestión para **Vintara Logistics VTC**.  
 Funciona como un portal integral donde los conductores pueden **gestionar su progreso**, **recompensas**, **soporte**, y acceder a los **recursos oficiales de la empresa**, mientras que la administración dispone de herramientas completas de control y moderación.
@@ -121,7 +123,17 @@ Soporte multilenguaje (ES / EN) mediante `includes/i18n.php`.
 
 ---
 
+## 🤝 Contribuidores
+
+<a href="https://github.com/cormado/driverhub/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=cormado/driverhub" />
+</a>
+
+
 ## ©️ Licencia
 
 © 2026 **Vintara Logistics**  
 Uso interno exclusivo.
+
+
+

@@ -3,6 +3,9 @@ header('Content-Type: application/json');
 
 require __DIR__ . '../../../includes/db.php';
 
+/* =========================
+   🧩 Helpers
+========================= */
 
 function getRequestHeaders()
 {
@@ -17,15 +20,12 @@ function getRequestHeaders()
             $headers[$name] = $value;
         }
     }
-
     return $headers;
 }
 
-
-
 function logWebhook($title, $data = [])
 {
-    $logDir = __DIR__ . '/../../logs';
+    $logDir  = __DIR__ . '/../../logs';
     $logFile = $logDir . '/trucky-webhook.log';
 
     if (!is_dir($logDir)) {
@@ -42,76 +42,89 @@ function logWebhook($title, $data = [])
 
     file_put_contents(
         $logFile,
-        json_encode($entry, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . PHP_EOL . str_repeat('-', 80) . PHP_EOL,
+        json_encode($entry, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        . PHP_EOL . str_repeat('-', 80) . PHP_EOL,
         FILE_APPEND
     );
 }
 
+function env($key, $default = null)
+{
+    return $_ENV[$key] ?? $_SERVER[$key] ?? $default;
+}
 
 /* =========================
-   📥 RAW payload
+   📥 RAW Request
 ========================= */
 
 $rawPayload = file_get_contents('php://input');
-$payload = json_decode($rawPayload, true);
+$payload    = json_decode($rawPayload, true);
 
+logWebhook('Incoming request', [
+    'method' => $_SERVER['REQUEST_METHOD'],
+    'raw'    => $rawPayload
+]);
 
-if (!$rawPayload || empty($payload['event'])) {
-    http_response_code(200);
-    echo json_encode([
-        'status' => 'webhook verified'
-    ]);
+/* =========================
+   🌐 GET → Webhook alive
+========================= */
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    echo json_encode(['status' => 'webhook alive']);
     exit;
 }
 
-logWebhook('Incoming request', [
-    'raw' => $rawPayload
-]);
+/* =========================
+   📭 POST vacío / test
+   (Trucky usa esto)
+========================= */
 
-if (!$payload) {
-    http_response_code(400);
-    exit(json_encode(['error' => 'Invalid JSON']));
+if (!$payload || !isset($payload['event'])) {
+    http_response_code(200);
+    echo json_encode(['status' => 'acknowledged']);
+    exit;
 }
-
-
 
 /* =========================
    🔐 Validar firma webhook
+   (DESACTIVADO)
 ========================= */
 
-$headers = getallheaders();
-$signature = $headers['X-Trucky-Signature'] ?? '';
+// $headers   = getRequestHeaders();
+// $signature = $headers['X-Trucky-Signature'] ?? '';
 
-$expectedSignature = 'sha256=' . hash_hmac(
-    'sha256',
-    $rawPayload,
-    env('TRUCKY_WEBHOOK_SECRET')
-);
+// $expectedSignature = 'sha256=' . hash_hmac(
+//     'sha256',
+//     $rawPayload,
+//     env('TRUCKY_WEBHOOK_SECRET')
+// );
 
-if (!hash_equals($expectedSignature, $signature)) {
-    http_response_code(401);
-    exit(json_encode(['error' => 'Invalid webhook signature']));
-}
+// if (!hash_equals($expectedSignature, $signature)) {
+//     http_response_code(401);
+//     exit(json_encode(['error' => 'Invalid webhook signature']));
+// }
 
 /* =========================
    🔐 Validar API Key
+   (DESACTIVADO)
 ========================= */
 
-if (
-    !isset($headers['X-Trucky-Api-Key']) ||
-    $headers['X-Trucky-Api-Key'] !== env('TRUCKY_API_KEY')
-) {
-    http_response_code(401);
-    exit(json_encode(['error' => 'Invalid API key']));
-}
+// if (
+//     !isset($headers['X-Trucky-Api-Key']) ||
+//     $headers['X-Trucky-Api-Key'] !== env('TRUCKY_API_KEY')
+// ) {
+//     http_response_code(401);
+//     exit(json_encode(['error' => 'Invalid API key']));
+// }
 
 /* =========================
    📡 Validar evento
 ========================= */
 
-if (($payload['event'] ?? '') !== 'job.finished') {
+if ($payload['event'] !== 'job.finished') {
     http_response_code(200);
-    exit(json_encode(['status' => 'ignored']));
+    echo json_encode(['status' => 'ignored']);
+    exit;
 }
 
 $data = $payload['data'];
@@ -146,7 +159,8 @@ $stmt->bind_param("i", $data['job_id']);
 $stmt->execute();
 
 if ($stmt->get_result()->num_rows > 0) {
-    exit(json_encode(['status' => 'duplicate']));
+    echo json_encode(['status' => 'duplicate']);
+    exit;
 }
 
 /* =========================

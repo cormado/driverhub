@@ -8,7 +8,7 @@ $lang = isset($_GET['lang']) ? $_GET['lang'] : (isset($lang) ? $lang : 'es');
 
 //puntos totales y disponibles
 $stmt = $conn->prepare("SELECT total_points, available_points FROM user_stats WHERE user_id = ?");
-$stmt->bind_param("i", $my_id);
+$stmt->bind_param("i", $uid_check);
 $stmt->execute();
 $stats_res = $stmt->get_result();
 $user_data = $stats_res->fetch_assoc();
@@ -23,7 +23,7 @@ $total_ach_query = $conn->query("SELECT COUNT(*) as total FROM achievements WHER
 $total_ach = $total_ach_query->fetch_assoc()['total'];
 
 $earned_ach_query = $conn->prepare("SELECT COUNT(*) as earned FROM user_achievements WHERE user_id = ?");
-$earned_ach_query->bind_param("i", $my_id);
+$earned_ach_query->bind_param("i", $uid_check);
 $earned_ach_query->execute();
 $earned_ach = $earned_ach_query->get_result()->fetch_assoc()['earned'];
 
@@ -34,7 +34,7 @@ if (!isset($conn)) {
     exit;
 }
 
-$my_id = $_SESSION['user_id'];
+$uid_check = $_SESSION['user_id'];
 $my_role = $_SESSION['role'];
 ?>
 
@@ -390,7 +390,7 @@ $my_role = $_SESSION['role'];
                        JOIN user_achievements ua ON a.id = ua.achievement_id 
                        WHERE ua.user_id = ? AND a.active = 1";
             $stmt_e = $conn->prepare($sql_earned);
-            $stmt_e->bind_param("i", $my_id);
+            $stmt_e->bind_param("i", $uid_check);
             $stmt_e->execute();
             $res_e = $stmt_e->get_result();
 
@@ -414,7 +414,7 @@ $my_role = $_SESSION['role'];
                         WHERE id NOT IN (SELECT achievement_id FROM user_achievements WHERE user_id = ?) 
                         AND active = 1";
             $stmt_p = $conn->prepare($sql_pending);
-            $stmt_p->bind_param("i", $my_id);
+            $stmt_p->bind_param("i", $uid_check);
             $stmt_p->execute();
             $res_p = $stmt_p->get_result();
 
@@ -479,7 +479,7 @@ $my_role = $_SESSION['role'];
                             WHERE ur.user_id = ?
                             ORDER BY ur.created_at DESC";
                 $stmt_h = $conn->prepare($sql_hist);
-                $stmt_h->bind_param("i", $my_id);
+                $stmt_h->bind_param("i", $uid_check);
                 $stmt_h->execute();
                 $res_h = $stmt_h->get_result();
 
