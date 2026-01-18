@@ -106,6 +106,9 @@ CREATE TABLE `trucksbook_jobs` (
   CONSTRAINT `jobs_ibfk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE INDEX idx_jobs_user_distance ON trucksbook_jobs (user_id, distance_km);
+
+
 
 CREATE TABLE `user_stats` (
   `user_id` int(11) NOT NULL,
@@ -138,6 +141,47 @@ ADD COLUMN `active` tinyint(1) NOT NULL DEFAULT 1
 ALTER TABLE `achievements`
 ADD COLUMN `category` VARCHAR(50) DEFAULT 'General',
 ADD COLUMN `icon` VARCHAR(100) DEFAULT 'fas fa-trophy';
+
+ALTER TABLE achievements
+ADD COLUMN rule_type ENUM('distance_job', 'distance_total') NOT NULL,
+ADD COLUMN min_distance_km INT DEFAULT NULL,
+ADD COLUMN required_jobs INT DEFAULT NULL,
+ADD COLUMN required_total_km INT DEFAULT NULL;
+
+ALTER TABLE achievements
+MODIFY rule_type ENUM('distance_job', 'total_jobs', 'distance_total') NOT NULL;
+
+
+
+--Logros por distancia
+INSERT INTO achievements
+(code, name, description, points_reward, rule_type, min_distance_km, required_jobs, category, icon)
+VALUES
+('LONG_1K_1', 'Primer viaje largo', 'Completa 1 viaje de al menos 1000 km', 50, 'distance_job', 1000, 1, 'Distancia', 'fas fa-road'),
+('LONG_1K_10', 'Rutero novato', 'Completa 10 viajes de al menos 1000 km', 150, 'distance_job', 1000, 10, 'Distancia', 'fas fa-route'),
+('LONG_1K_100', 'Rutero experto', 'Completa 100 viajes de al menos 1000 km', 500, 'distance_job', 1000, 100, 'Distancia', 'fas fa-truck-moving');
+
+INSERT INTO achievements
+(code, name, description, points_reward, rule_type, min_distance_km, required_jobs, category, icon)
+VALUES
+('ULTRA_4K_1', 'Maratón', 'Completa 1 viaje de al menos 4000 km', 300, 'distance_job', 4000, 1, 'Distancia', 'fas fa-stopwatch'),
+('ULTRA_4K_10', 'Iron Driver', 'Completa 10 viajes de al menos 4000 km', 1000, 'distance_job', 4000, 10, 'Distancia', 'fas fa-medal');
+
+
+--Logros por km acumulados
+INSERT INTO achievements
+(code, name, description, points_reward, rule_type, required_total_km, category, icon)
+VALUES
+('TOTAL_50K', 'Rodando sin parar', 'Alcanza 50,000 km totales', 300, 'distance_total', 50000, 'Progreso', 'fas fa-chart-line'),
+('TOTAL_100K', 'Veterano de la carretera', 'Alcanza 100,000 km totales', 700, 'distance_total', 100000, 'Progreso', 'fas fa-chart-line'),
+('TOTAL_500K', 'Leyenda VTC', 'Alcanza 500,000 km totales', 2000, 'distance_total', 500000, 'Progreso', 'fas fa-crown');
+--Logros por número de viajes
+INSERT INTO achievements
+(code, name, description, points_reward, rule_type, min_distance_km, required_jobs, category, icon)
+VALUES
+('JOBS_10',  'Conductor activo',     'Completa 10 viajes',  50,  'distance_job', 0, 10,  'Actividad', 'fas fa-id-badge'),
+('JOBS_100', 'Conductor constante',  'Completa 100 viajes', 200, 'distance_job', 0, 100, 'Actividad', 'fas fa-id-badge'),
+('JOBS_500', 'Conductor dedicado',   'Completa 500 viajes', 800, 'distance_job', 0, 500, 'Actividad', 'fas fa-id-badge');
 
 
 
@@ -190,3 +234,81 @@ CREATE TABLE `user_rewards` (
 ALTER TABLE `user_rewards`
 ADD KEY `status` (`status`);
 
+----------------------------------------------
+-- ZONA DE PROCEDIMIENTOS ALMACENADOS
+----------------------------------------------
+
+--grant_distance_achievements
+-- SE ENCARGA DE ASIGNAR LOGROS Y PUNTOS OBTENIDOS POR LOS LOGROS A LOS USUARIOS
+DELIMITER $$
+
+CREATE PROCEDURE grant_distance_achievements(IN p_user_id INT)
+BEGIN
+    DECLARE done INT DEFAULT 0;
+    DECLARE v_achievement_id INT;
+    DECLARE v_points INT;
+
+    DECLARE cur CURSOR FOR
+        SELECT a.id, a.points_reward
+        FROM achievements a
+        WHERE a.active = 1
+        AND NOT EXISTS (
+            SELECT 1
+            FROM user_achievements ua
+            WHERE ua.user_id = p_user_id
+            AND ua.achievement_id = a.id
+        )
+        AND (
+            (
+                a.rule_type = 'distance_job'
+                AND (
+                    SELECT COUNT(*)
+                    FROM trucksbook_jobs j
+                    WHERE j.user_id = p_user_id
+                    AND j.distance_km >= a.min_distance_km
+                ) >= a.required_jobs
+            )
+            OR
+            (
+                a.rule_type = 'distance_total'
+                AND (
+                    SELECT us.total_km
+                    FROM user_stats us
+                    WHERE us.user_id = p_user_id
+                ) >= a.required_total_km
+            )
+            OR
+            (
+                a.rule_type = 'total_jobs'
+                AND (
+                    SELECT us.total_jobs
+                    FROM user_stats us
+                    WHERE us.user_id = p_user_id
+                ) >= a.required_jobs
+            )
+        );
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+
+    OPEN cur;
+
+    read_loop: LOOP
+        FETCH cur INTO v_achievement_id, v_points;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+
+        INSERT INTO user_achievements (user_id, achievement_id)
+        VALUES (p_user_id, v_achievement_id);
+
+        UPDATE user_stats
+        SET
+            total_points = total_points + v_points,
+            available_points = available_points + v_points
+        WHERE user_id = p_user_id;
+    END LOOP;
+
+    CLOSE cur;
+END$$
+
+DELIMITER ;

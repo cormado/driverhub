@@ -249,8 +249,8 @@ if (!isset($conn)) {
 
     <div id="gest-logros" class="tab-content" style="display: block;">
         <div class="section-header">
-            <h3>GESTIONAR LOGROS</h3>
-            <button class="btn-create" onclick="toggleModal('modalLogro', true)">
+            <h3><?php echo $t['store_admin_title_manage_achievements']; ?></h3>
+            <button class="btn-create" onclick="openCreateLogroModal()">
                 <i class="fas fa-plus"></i> <?php echo $t['store_admin_btn_create_logro']; ?>
             </button>
         </div>
@@ -260,6 +260,7 @@ if (!isset($conn)) {
                     <th><?php echo $t['store_admin_col_codigo']; ?></th>
                     <th><?php echo $t['store_admin_col_nombre']; ?></th>
                     <th><?php echo $t['store_admin_col_categoria']; ?></th>
+                    <th><?php echo $t['store_admin_col_rule']; ?></th>
                     <th><?php echo $t['store_admin_col_puntos']; ?></th>
                     <th><?php echo $t['store_admin_col_estado']; ?></th>
                     <th><?php echo $t['store_admin_col_usuarios']; ?></th>
@@ -279,6 +280,24 @@ if (!isset($conn)) {
                             <?php echo $logro['name']; ?>
                         </td>
                         <td><?php echo $logro['category']; ?></td>
+                        <td>
+                            <?php
+                            if ($logro['rule_type'] === 'distance_job') {
+                                echo "<span class='badge badge-info'>
+                                        {$logro['required_jobs']} viajes ≥ {$logro['min_distance_km']} km
+                                    </span>";
+                            } elseif ($logro['rule_type'] === 'total_jobs') {
+                                echo "<span class='badge badge-success'>
+                                        {$logro['required_jobs']} viajes
+                                    </span>";
+                            } elseif ($logro['rule_type'] === 'distance_total') {
+                                echo "<span class='badge badge-warning'>
+                                        {$logro['required_total_km']} km totales
+                                    </span>";
+                            }
+                            ?>
+                        </td>
+
                         <td class="txt-purple"><?php echo $logro['points_reward']; ?></td>
                         <td>
                             <span class="status-tag <?php echo $logro['active'] ? 'active' : 'inactive'; ?>">
@@ -427,6 +446,27 @@ if (!isset($conn)) {
         document.getElementById('logroCategory').value = 'Seguridad';
         document.getElementById('logroIcon').value = 'fas fa-shield-alt';
         document.getElementById('logroActive').checked = true;
+        toggleModal('modalLogro', true);
+    }
+
+    function openCreateLogroModal() {
+
+        document.getElementById('logroAction').value = 'create';
+        document.getElementById('modalLogroTitle').innerText = 'CREAR LOGRO';
+
+        document.getElementById('logroId').value = '';
+        document.getElementById('logroCode').value = '';
+        document.getElementById('logroName').value = '';
+        document.getElementById('logroDesc').value = '';
+        document.getElementById('logroPoints').value = '';
+        document.getElementById('logroCategory').value = '';
+        document.getElementById('logroIcon').value = '';
+        document.getElementById('logroActive').checked = true;
+
+        // Reset rule
+        document.getElementById('logroRuleType').value = 'distance_job';
+        updateRuleFields('distance_job');
+
         toggleModal('modalLogro', true);
     }
 </script>

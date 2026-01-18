@@ -31,6 +31,13 @@
         font-family: 'Kanit', sans-serif;
     }
 
+    .modal-scrollable {
+        max-height: 85vh;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+
+
     .modal-content h2 {
         margin-top: 0;
         font-style: italic;
@@ -152,8 +159,8 @@
 </style>
 
 <div id="modalLogro" class="vintara-modal">
-    <div class="modal-content">
-        <h2 id="modalLogroTitle"><?php echo $t['btn_create_logro']; ?></h2>
+    <div class="modal-content modal-scrollable">
+        <h2 id="modalLogroTitle"><?php echo $t['store_admin_btn_create_logro']; ?></h2>
         <form class="vintara-form" action="actions/manage_achievements.php" method="POST">
             <input type="hidden" name="action" id="logroAction" value="create">
             <input type="hidden" name="id" id="logroId">
@@ -185,10 +192,42 @@
             </div>
 
             <div class="form-group">
-                <label>Icono (FontAwesome Class)</label>
+                <label>Icon (FontAwesome Class)</label>
                 <input type="text" name="icon" id="logroIcon" placeholder="fas fa-shield-alt">
                 <small style="color: #666; font-size: 0.7rem;">Ejemplo: fas fa-trophy, fas fa-star</small>
             </div>
+
+            <hr>
+            <h3><?php echo $t['store_admin_modal_rules']; ?></h3>
+
+            <div class="form-group">
+                <label><?php echo $t['store_admin_modal_tipe_achievement']; ?></label>
+                <select name="rule_type" id="logroRuleType" required>
+                    <option value="distance_job"><?php echo $t['store_admin_modal_min_distance']; ?></option>
+                    <option value="total_jobs"><?php echo $t['store_admin_modal_required_jobs']; ?></option>
+                    <option value="distance_total"><?php echo $t['store_admin_modal_type_distance_acumulated']; ?></option>
+                </select>
+            </div>
+
+            <div class="form-row">
+
+                <div class="form-group" id="groupMinDistance">
+                    <label><?php echo $t['store_admin_modal_distance_in_km']; ?></label>
+                    <input type="number" name="min_distance_km" id="logroMinDistance" min="0">
+                </div>
+
+                <div class="form-group" id="groupRequiredJobs">
+                    <label><?php echo $t['store_admin_modal_trips_required']; ?></label>
+                    <input type="number" name="required_jobs" id="logroRequiredJobs" min="0">
+                </div>
+
+                <div class="form-group" id="groupTotalKm">
+                    <label><?php echo $t['store_admin_modal_total_distance_required']; ?></label>
+                    <input type="number" name="required_total_km" id="logroRequiredTotalKm" min="0">
+                </div>
+
+            </div>
+
 
             <div class="form-group">
                 <label>
@@ -253,27 +292,8 @@
     </div>
 </div>
 
+
 <script>
-    /**
-     * Lógica para abrir modal de Logro en modo edición
-     * @param {Object} data - Objeto con la información del logro de la BD
-     */
-    function openEditLogroModal(data) {
-        document.getElementById('logroAction').value = 'edit';
-        document.getElementById('modalLogroTitle').innerText = 'EDITAR LOGRO';
-        document.getElementById('logroId').value = data.id;
-        document.getElementById('logroCode').value = data.code;
-        document.getElementById('logroName').value = data.name;
-        document.getElementById('logroDesc').value = data.description;
-        document.getElementById('logroPoints').value = data.points_reward;
-        // La categoría e icono pueden variar según tus columnas reales en DB
-        document.getElementById('logroCategory').value = data.category || '';
-        document.getElementById('logroIcon').value = data.icon || '';
-        document.getElementById('logroActive').checked = parseInt(data.active) === 1;
-
-        toggleModal('modalLogro', true);
-    }
-
     /**
      * Lógica para abrir modal de Recompensa en modo edición
      * @param {Object} data - Objeto con la información de la recompensa de la BD
@@ -290,5 +310,87 @@
         document.getElementById('rewardActive').checked = parseInt(data.active) === 1;
 
         toggleModal('modalRecompensa', true);
+    }
+
+    /**
+     * Actualiza los campos visibles en el modal de Logro según el tipo de regla seleccionado
+     * @param {string} type - Tipo de regla seleccionado
+     */
+    function updateRuleFields(type) {
+
+        const groupMinDistance = document.getElementById('groupMinDistance');
+        const groupJobs = document.getElementById('groupRequiredJobs');
+        const groupTotalKm = document.getElementById('groupTotalKm');
+
+        const minDistance = document.getElementById('logroMinDistance');
+        const jobs = document.getElementById('logroRequiredJobs');
+        const totalKm = document.getElementById('logroRequiredTotalKm');
+
+        // Ocultar todo
+        groupMinDistance.style.display = 'none';
+        groupJobs.style.display = 'none';
+        groupTotalKm.style.display = 'none';
+
+        // Limpiar valores para que PHP reciba NULL
+        minDistance.value = '';
+        jobs.value = '';
+        totalKm.value = '';
+
+        if (type === 'distance_job') {
+            groupMinDistance.style.display = 'block';
+            groupJobs.style.display = 'block';
+        }
+
+        if (type === 'total_jobs') {
+            groupJobs.style.display = 'block';
+        }
+
+        if (type === 'distance_total') {
+            groupTotalKm.style.display = 'block';
+        }
+    }
+
+    // Evento para cambiar campos según tipo de regla
+    document.getElementById('logroRuleType').addEventListener('change', function() {
+        updateRuleFields(this.value);
+    });
+
+    /**
+     * Abre el modal de Logro en modo edición
+     * @param {Object} data - Objeto con la información del logro de la BD
+     */
+    function openEditLogroModal(data) {
+
+        document.getElementById('logroAction').value = 'edit';
+        document.getElementById('modalLogroTitle').innerText = 'EDITAR LOGRO';
+
+        document.getElementById('logroId').value = data.id;
+        document.getElementById('logroCode').value = data.code;
+        document.getElementById('logroName').value = data.name;
+        document.getElementById('logroDesc').value = data.description;
+        document.getElementById('logroPoints').value = data.points_reward;
+        document.getElementById('logroCategory').value = data.category || '';
+        document.getElementById('logroIcon').value = data.icon || '';
+        document.getElementById('logroActive').checked = parseInt(data.active) === 1;
+
+        document.getElementById('logroRuleType').value = data.rule_type;
+
+        // Mostrar campos correctos
+        updateRuleFields(data.rule_type);
+
+        // Cargar valores reales
+        if (data.min_distance_km !== null) {
+            document.getElementById('logroMinDistance').value = data.min_distance_km;
+        }
+
+        if (data.required_jobs !== null) {
+            document.getElementById('logroRequiredJobs').value = data.required_jobs;
+        }
+
+        if (data.required_total_km !== null) {
+            document.getElementById('logroRequiredTotalKm').value = data.required_total_km;
+        }
+
+        toggleModal('modalLogro', true);
     }
 </script>

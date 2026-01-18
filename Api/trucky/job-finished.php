@@ -53,6 +53,7 @@ function env($key, $default = null)
     return $_ENV[$key] ?? $_SERVER[$key] ?? $default;
 }
 
+
 /* =========================
    📥 RAW Request
 ========================= */
@@ -76,7 +77,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 /* =========================
    📭 POST vacío / test
-   (Trucky usa esto)
 ========================= */
 
 if (!$payload || !isset($payload['event'])) {
@@ -87,35 +87,33 @@ if (!$payload || !isset($payload['event'])) {
 
 /* =========================
    🔐 Validar firma webhook
-   (DESACTIVADO)
 ========================= */
 
-// $headers   = getRequestHeaders();
-// $signature = $headers['X-Trucky-Signature'] ?? '';
+$headers   = getRequestHeaders();
+$signature = $headers['X-Trucky-Signature'] ?? '';
 
-// $expectedSignature = 'sha256=' . hash_hmac(
-//     'sha256',
-//     $rawPayload,
-//     env('TRUCKY_WEBHOOK_SECRET')
-// );
+$secret = env('TRUCKY_WEBHOOK_SECRET');
 
-// if (!hash_equals($expectedSignature, $signature)) {
-//     http_response_code(401);
-//     exit(json_encode(['error' => 'Invalid webhook signature']));
-// }
+if (!$secret) {
+    logWebhook('Webhook error', ['error' => 'Missing webhook secret']);
+    http_response_code(500);
+    exit(json_encode(['error' => 'Server misconfigured']));
+}
 
-/* =========================
-   🔐 Validar API Key
-   (DESACTIVADO)
-========================= */
+$expectedSignature = 'sha256=' . hash_hmac(
+    'sha256',
+    $rawPayload,
+    $secret
+);
 
-// if (
-//     !isset($headers['X-Trucky-Api-Key']) ||
-//     $headers['X-Trucky-Api-Key'] !== env('TRUCKY_API_KEY')
-// ) {
-//     http_response_code(401);
-//     exit(json_encode(['error' => 'Invalid API key']));
-// }
+if (!hash_equals($expectedSignature, $signature)) {
+    logWebhook('Invalid signature', [
+        'expected' => $expectedSignature,
+        'received' => $signature
+    ]);
+    http_response_code(401);
+    exit(json_encode(['error' => 'Invalid webhook signature']));
+}
 
 /* =========================
    📡 Validar evento
@@ -133,35 +131,35 @@ $data = $payload['data'];
    👤 Usuario
 ========================= */
 
-$stmt = $conn->prepare("
-    SELECT id FROM users WHERE trucky_driver_id = ?
-");
+$stmt = $conn->prepare("SELECT id FROM users WHERE trucky_driver_id = ?");
 $stmt->bind_param("i", $data['driver']['id']);
 $stmt->execute();
 
 $user = $stmt->get_result()->fetch_assoc();
+$stmt->close();
 
 if (!$user) {
     http_response_code(404);
     exit(json_encode(['error' => 'Driver not registered']));
 }
 
-$userId = $user['id'];
+$userId = (int) $user['id'];
 
 /* =========================
    🚫 Duplicados
 ========================= */
 
-$stmt = $conn->prepare("
-    SELECT id FROM trucksbook_jobs WHERE job_id = ?
-");
+$stmt = $conn->prepare("SELECT id FROM trucksbook_jobs WHERE job_id = ?");
 $stmt->bind_param("i", $data['job_id']);
 $stmt->execute();
 
 if ($stmt->get_result()->num_rows > 0) {
+    $stmt->close();
     echo json_encode(['status' => 'duplicate']);
     exit;
 }
+
+$stmt->close();
 
 /* =========================
    🧮 Puntos
@@ -170,66 +168,104 @@ if ($stmt->get_result()->num_rows > 0) {
 $points = (int) $data['distance_km'] * (int) env('POINTS_PER_KM', 1);
 
 /* =========================
-   💾 Insert job
+   🔒 Transacción
 ========================= */
 
-$stmt = $conn->prepare("
-    INSERT INTO trucksbook_jobs (
-        job_id, user_id, game, distance_km, profit,
-        from_city, from_country, to_city, to_country,
-        cargo, truck, points_earned
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-");
+$conn->begin_transaction();
 
-$stmt->bind_param(
-    "iiisiisssssi",
-    $data['job_id'],
-    $userId,
-    $data['game'],
-    $data['distance_km'],
-    $data['income'],
-    $data['from']['city'],
-    $data['from']['country'],
-    $data['to']['city'],
-    $data['to']['country'],
-    $data['cargo'],
-    $data['truck'],
-    $points
-);
+try {
 
-$stmt->execute();
+    /* =========================
+       💾 Insert job
+    ========================= */
 
-/* =========================
-   📊 Stats
-========================= */
+    $stmt = $conn->prepare("
+        INSERT INTO trucksbook_jobs (
+            job_id, user_id, game, distance_km, profit,
+            from_city, from_country, to_city, to_country,
+            cargo, truck, points_earned
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+    ");
 
-$conn->query("
-    INSERT INTO user_stats (
-        user_id, total_km, total_jobs,
-        total_points, available_points, last_job_at
-    )
-    VALUES (
+    $stmt->bind_param(
+        "iiisiisssssi",
+        $data['job_id'],
         $userId,
-        {$data['distance_km']},
-        1,
-        $points,
-        $points,
-        NOW()
-    )
-    ON DUPLICATE KEY UPDATE
-        total_km = total_km + {$data['distance_km']},
-        total_jobs = total_jobs + 1,
-        total_points = total_points + $points,
-        available_points = available_points + $points,
-        last_job_at = NOW()
-");
+        $data['game'],
+        $data['distance_km'],
+        $data['income'],
+        $data['from']['city'],
+        $data['from']['country'],
+        $data['to']['city'],
+        $data['to']['country'],
+        $data['cargo'],
+        $data['truck'],
+        $points
+    );
+
+    $stmt->execute();
+    $stmt->close();
+
+    /* =========================
+       📊 Stats
+    ========================= */
+
+    $conn->query("
+        INSERT INTO user_stats (
+            user_id, total_km, total_jobs,
+            total_points, available_points, last_job_at
+        )
+        VALUES (
+            $userId,
+            {$data['distance_km']},
+            1,
+            $points,
+            $points,
+            NOW()
+        )
+        ON DUPLICATE KEY UPDATE
+            total_km = total_km + {$data['distance_km']},
+            total_jobs = total_jobs + 1,
+            total_points = total_points + $points,
+            available_points = available_points + $points,
+            last_job_at = NOW()
+    ");
+
+    /* =========================
+       🏆 Grant achievements
+    ========================= */
+
+    $stmt = $conn->prepare("CALL grant_distance_achievements(?)");
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    $stmt->close();
+
+    /* =========================
+       ✅ Commit
+    ========================= */
+
+    $conn->commit();
+
+} catch (Throwable $e) {
+
+    $conn->rollback();
+
+    logWebhook('Transaction failed', [
+        'error' => $e->getMessage(),
+        'user_id' => $userId,
+        'job_id' => $data['job_id']
+    ]);
+
+    http_response_code(500);
+    exit(json_encode(['error' => 'Database transaction failed']));
+}
 
 /* =========================
    ✅ OK
 ========================= */
 
 echo json_encode([
-    'status' => 'ok',
+    'status'  => 'ok',
     'job_id' => $data['job_id'],
     'points' => $points
 ]);
