@@ -434,31 +434,43 @@ $my_role = $_SESSION['role'];
     <div id="recompensas" class="tab-content">
         <div class="cards-grid">
             <?php
-            $rewards_q = $conn->query("SELECT * FROM rewards WHERE active = 1 AND stock > 0");
+            // Traemos solo recompensas activas
+            $rewards_q = $conn->query("SELECT * FROM rewards WHERE active = 1");
             while ($rew = $rewards_q->fetch_assoc()):
+                // Puede comprar si tiene puntos suficientes
                 $can_afford = ($available_pts >= $rew['cost_points']);
+                // Puede canjear si hay stock o si es infinito
+                $has_stock = ($rew['infinite_stock'] || $rew['stock'] > 0);
             ?>
-                <div class="reward-card <?php echo !$can_afford ? 'disabled' : ''; ?>">
+                <div class="reward-card <?php echo (!$can_afford || !$has_stock) ? 'disabled' : ''; ?>">
                     <div class="reward-icon"><i class="fas fa-gift"></i></div>
                     <div class="reward-header">
                         <span class="price"><?php echo $rew['cost_points']; ?> pts</span>
                     </div>
                     <h4><?php echo $rew['name']; ?></h4>
                     <p><?php echo $rew['description']; ?></p>
-                    <span class="stock"><?php echo $rew['stock']; ?> <?php echo $t['store_rew_stock']; ?></span>
+                    <span class="stock">
+                        <?php
+                        echo $rew['infinite_stock'] ? '∞' : $rew['stock'];
+                        echo ' ' . $t['store_rew_stock'];
+                        ?>
+                    </span>
 
-                    <?php if ($can_afford): ?>
+                    <?php if ($can_afford && $has_stock): ?>
                         <form action="actions/redeem_reward.php" method="POST">
                             <input type="hidden" name="reward_id" value="<?php echo $rew['id']; ?>">
                             <button type="submit" class="btn-redeem"><?php echo $t['store_rew_redeem']; ?></button>
                         </form>
                     <?php else: ?>
-                        <button class="btn-redeem" disabled><?php echo $t['store_rew_insufficient']; ?></button>
+                        <button class="btn-redeem" disabled>
+                            <?php echo !$can_afford ? $t['store_rew_insufficient'] : $t['store_rew_out_of_stock']; ?>
+                        </button>
                     <?php endif; ?>
                 </div>
             <?php endwhile; ?>
         </div>
     </div>
+
 
     <div id="historial" class="tab-content">
         <table class="vintara-table">

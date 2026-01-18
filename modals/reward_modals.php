@@ -282,6 +282,12 @@
                     <input type="checkbox" name="active" id="rewardActive" value="1" checked style="width: auto;">
                     <?php echo $t['store_admin_lbl_activo']; ?>
                 </label>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="infinite_stock" id="rewardInfiniteStock" value="1" style="width:auto;">
+                        Stock infinito
+                    </label>
+                </div>
             </div>
 
             <div class="modal-footer">
@@ -308,6 +314,28 @@
         document.getElementById('rewardCost').value = data.cost_points;
         document.getElementById('rewardStock').value = data.stock;
         document.getElementById('rewardActive').checked = parseInt(data.active) === 1;
+        document.getElementById('rewardInfiniteStock').checked = parseInt(data.infinite_stock) === 1;
+        document.getElementById('rewardStock').disabled = parseInt(data.infinite_stock) === 1;
+
+        toggleModal('modalRecompensa', true);
+    }
+    document.getElementById('rewardInfiniteStock').addEventListener('change', function() {
+        document.getElementById('rewardStock').disabled = this.checked;
+        document.getElementById('rewardStock').value = 0;
+    });
+
+    function openCreateRewardModal() {
+        document.getElementById('rewardAction').value = 'create';
+        document.getElementById('modalRewardTitle').innerText = 'CREAR RECOMPENSA';
+        document.getElementById('rewardId').value = '';
+        document.getElementById('rewardCode').value = '';
+        document.getElementById('rewardName').value = '';
+        document.getElementById('rewardDesc').value = '';
+        document.getElementById('rewardCost').value = '';
+        document.getElementById('rewardStock').value = '';
+        document.getElementById('rewardActive').checked = true;
+        document.getElementById('rewardInfiniteStock').checked = false;
+        document.getElementById('rewardStock').disabled = false;
 
         toggleModal('modalRecompensa', true);
     }

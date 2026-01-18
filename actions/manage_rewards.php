@@ -2,7 +2,7 @@
 session_start();
 require_once __DIR__ . "/../includes/db.php";
 
-if($conn->connect_error){
+if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
@@ -22,14 +22,21 @@ if ($action === 'create' || $action === 'edit') {
     $description = $conn->real_escape_string($_POST['description']);
     $cost = intval($_POST['cost']);
     $stock = intval($_POST['stock']);
+    $infinite_stock = isset($_POST['infinite_stock']) ? 1 : 0;
     $active = isset($_POST['active']) ? 1 : 0;
-
     if ($action === 'create') {
-        $sql = "INSERT INTO rewards (code, name, description, cost_points, stock, active) 
-                VALUES ('$code', '$name', '$description', $cost, $stock, $active)";
+        $sql = "INSERT INTO rewards (code, name, description, cost_points, stock, active, infinite_stock) 
+            VALUES ('$code', '$name', '$description', $cost, $stock, $active, $infinite_stock)";
     } else {
-        $sql = "UPDATE rewards SET code='$code', name='$name', description='$description', 
-                cost_points=$cost, stock=$stock, active=$active WHERE id=$id";
+        $sql = "UPDATE rewards SET 
+                code='$code', 
+                name='$name', 
+                description='$description', 
+                cost_points=$cost, 
+                stock=$stock, 
+                active=$active,
+                infinite_stock=$infinite_stock
+            WHERE id=$id";
     }
 
     if ($conn->query($sql)) {

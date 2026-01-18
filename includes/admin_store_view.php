@@ -245,6 +245,7 @@ if (!isset($conn)) {
     <div class="admin-tabs">
         <button class="tab-btn active" onclick="openAdminTab(event, 'gest-logros')"><?php echo $t['store_admin_tab_logros']; ?></button>
         <button class="tab-btn" onclick="openAdminTab(event, 'gest-recompensas')"><?php echo $t['store_admin_tab_recompensas']; ?></button>
+        <button class="tab-btn" onclick="openAdminTab(event, 'gest-canjes')"><?php echo $t['store_admin_tab_canjes']; ?></button>
     </div>
 
     <div id="gest-logros" class="tab-content" style="display: block;">
@@ -324,7 +325,7 @@ if (!isset($conn)) {
 
     <div id="gest-recompensas" class="tab-content" style="display: none;">
         <div class="section-header">
-            <h3>GESTIONAR RECOMPENSAS</h3>
+            <h3> <?php echo $t['store_admin_tab_recompensas']; ?></h3>
             <button class="btn-create" onclick="toggleModal('modalRecompensa', true)">
                 <i class="fas fa-plus"></i> <?php echo $t['store_admin_btn_create_recompensa']; ?>
             </button>
@@ -343,16 +344,25 @@ if (!isset($conn)) {
             </thead>
             <tbody>
                 <?php
-                $resRewards = $conn->query("SELECT r.*, (SELECT COUNT(*) FROM user_rewards ur WHERE ur.reward_id = r.id) as total_canjes FROM rewards r ORDER BY id DESC");
+                $resRewards = $conn->query("
+    SELECT 
+        r.*, 
+        (SELECT COUNT(*) FROM user_rewards ur WHERE ur.reward_id = r.id) AS total_canjes 
+    FROM rewards r 
+    ORDER BY id DESC
+");
+
                 while ($rew = $resRewards->fetch_assoc()):
-                    // Preparamos los datos para el JS
                     $dataJson = htmlspecialchars(json_encode($rew), ENT_QUOTES, 'UTF-8');
+
+                    // Mostrar stock infinito como ∞
+                    $displayStock = $rew['infinite_stock'] ? '∞' : $rew['stock'];
                 ?>
                     <tr>
                         <td><?php echo $rew['code']; ?></td>
                         <td><?php echo $rew['name']; ?></td>
                         <td class="txt-purple"><?php echo $rew['cost_points']; ?> pts</td>
-                        <td><?php echo $rew['stock']; ?></td>
+                        <td><?php echo $displayStock; ?></td>
                         <td>
                             <span class="status-tag <?php echo $rew['active'] ? 'active' : 'inactive'; ?>">
                                 <?php echo $rew['active'] ? 'ACTIVO' : 'INACTIVO'; ?>
@@ -374,9 +384,78 @@ if (!isset($conn)) {
                         </td>
                     </tr>
                 <?php endwhile; ?>
+
             </tbody>
         </table>
     </div>
+
+    <div id="gest-canjes" class="tab-content" style="display: none;">
+        <div class="section-header">
+            <h3>GESTIONAR CANJES</h3>
+        </div>
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th><?php echo $t['store_admin_col_user']; ?></th>
+                    <th><?php echo $t['store_admin_col_reward']; ?></th>
+                    <th><?php echo $t['store_admin_col_points_gastados']; ?></th>
+                    <th><?php echo $t['store_admin_col_estado']; ?></th>
+                    <th> <?php echo $t['store_admin_col_acciones']; ?> </th>
+                    <th> <?php echo $t['store_admin_col_acciones']; ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $resUserRewards = $conn->query("
+                SELECT ur.*, u.username, r.name as reward_name
+                FROM user_rewards ur
+                JOIN users u ON ur.user_id = u.id
+                JOIN rewards r ON ur.reward_id = r.id
+                ORDER BY ur.id DESC
+            ");
+                while ($ur = $resUserRewards->fetch_assoc()):
+                ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($ur['username']); ?></td>
+                        <td><?php echo htmlspecialchars($ur['reward_name']); ?></td>
+                        <td class="txt-purple"><?php echo $ur['points_spent']; ?> pts</td>
+                        <td>
+                            <?php if ($ur['status'] === 'pendiente'): ?>
+                                <span class="status-tag inactive"> <?php echo $t['store_admin_lbl_pendiente']; ?></span>
+                            <?php elseif ($ur['status'] === 'entregado'): ?>
+                                <span class="status-tag active"><?php echo $t['store_admin_lbl_entregado']; ?></span>
+                            <?php else: ?>
+                                <span class="status-tag inactive"><?php echo $t['store_admin_lbl_cancelado']; ?></span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?php echo date('d/m/Y H:i', strtotime($ur['created_at'])); ?></td>
+                        <td class="action-btns">
+                            <?php if ($ur['status'] === 'pendiente'): ?>
+                                <form action="actions/manage_user_rewards.php" method="POST" style="display:inline;">
+                                    <input type="hidden" name="action" value="entregado">
+                                    <input type="hidden" name="id" value="<?php echo $ur['id']; ?>">
+                                    <button type="submit" class="btn-icon btn-edit" title="Marcar como Entregado">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </form>
+
+                                <form action="actions/manage_user_rewards.php" method="POST" style="display:inline;">
+                                    <input type="hidden" name="action" value="cancelado">
+                                    <input type="hidden" name="id" value="<?php echo $ur['id']; ?>">
+                                    <button type="submit" class="btn-icon btn-delete" title="Marcar como Cancelado">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </form>
+                            <?php else: ?>
+                                <span style="opacity: 0.5;">—</span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
+    </div>
+
 </div>
 
 <?php include 'modals/reward_modals.php'; ?>
@@ -417,20 +496,17 @@ if (!isset($conn)) {
 
     // Función para abrir el modal en modo EDITAR (Rellena los campos)
     function openEditRewardModal(data) {
-        // Cambiamos el comportamiento del formulario
         document.getElementById('rewardAction').value = 'edit';
         document.getElementById('modalRewardTitle').innerText = 'EDITAR RECOMPENSA';
-
-        // Rellenamos los campos con el objeto 'data' que viene de la tabla
         document.getElementById('rewardId').value = data.id;
         document.getElementById('rewardCode').value = data.code;
         document.getElementById('rewardName').value = data.name;
         document.getElementById('rewardDesc').value = data.description;
         document.getElementById('rewardCost').value = data.cost_points;
         document.getElementById('rewardStock').value = data.stock;
-
-        // El checkbox (data.active suele venir como "1" o "0")
-        document.getElementById('rewardActive').checked = (data.active == 1);
+        document.getElementById('rewardActive').checked = parseInt(data.active) === 1;
+        document.getElementById('rewardInfiniteStock').checked = parseInt(data.infinite_stock) === 1;
+        document.getElementById('rewardStock').disabled = parseInt(data.infinite_stock) === 1;
 
         toggleModal('modalRecompensa', true);
     }
