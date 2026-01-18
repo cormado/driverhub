@@ -10,7 +10,7 @@ function env($key, $default = null)
     return $_ENV[$key] ?? $_SERVER[$key] ?? $default;
 }
 
-$webhookUrl = 'http://localhost/Driverhub/Api/trucky/job-finished.php';
+$webhookUrl = 'https://e0382e57205a.ngrok-free.app/Driverhub/Api/trucky/job-finished.php';
 
 /* =========================
    🔐 MISMA KEY QUE EN .env
@@ -28,7 +28,7 @@ $webhookSecret = env('TRUCKY_WEBHOOK_SECRET');
 $payload = [
     'event' => 'job.finished',
     'data' => [
-        'job_id' => 987654321,
+        'job_id' => 987654322,
         'game' => 'ETS2',
         'distance_km' => 1250,
         'income' => 48000,

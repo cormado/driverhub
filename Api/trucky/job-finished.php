@@ -43,7 +43,7 @@ function logWebhook($title, $data = [])
     file_put_contents(
         $logFile,
         json_encode($entry, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
-        . PHP_EOL . str_repeat('-', 80) . PHP_EOL,
+            . PHP_EOL . str_repeat('-', 80) . PHP_EOL,
         FILE_APPEND
     );
 }
@@ -86,11 +86,17 @@ if (!$payload || !isset($payload['event'])) {
 }
 
 /* =========================
-   🔐 Validar firma webhook
+   🔐 Validar firma webhook (Trucky)
 ========================= */
 
-$headers   = getRequestHeaders();
-$signature = $headers['X-Trucky-Signature'] ?? '';
+$headers = getRequestHeaders();
+
+/**
+ * Trucky envía la firma en este header:
+ * X-Signature-Sha256
+ * (NO usa el prefijo "sha256=")
+ */
+$signature = $headers['X-Signature-Sha256'] ?? '';
 
 $secret = env('TRUCKY_WEBHOOK_SECRET');
 
@@ -100,12 +106,24 @@ if (!$secret) {
     exit(json_encode(['error' => 'Server misconfigured']));
 }
 
-$expectedSignature = 'sha256=' . hash_hmac(
+if (!$signature) {
+    logWebhook('Webhook error', ['error' => 'Missing signature header']);
+    http_response_code(401);
+    exit(json_encode(['error' => 'Missing signature']));
+}
+
+/**
+ * Firma esperada (HMAC SHA256 del raw payload)
+ */
+$expectedSignature = hash_hmac(
     'sha256',
     $rawPayload,
     $secret
 );
 
+/**
+ * Comparación segura
+ */
 if (!hash_equals($expectedSignature, $signature)) {
     logWebhook('Invalid signature', [
         'expected' => $expectedSignature,
@@ -115,31 +133,62 @@ if (!hash_equals($expectedSignature, $signature)) {
     exit(json_encode(['error' => 'Invalid webhook signature']));
 }
 
+
 /* =========================
    📡 Validar evento
 ========================= */
 
-if ($payload['event'] !== 'job.finished') {
+if ($payload['event'] !== 'job_completed') {
+    logWebhook('IGNORANDO EVENTO', [
+        'event' => $payload['event']
+    ]);
     http_response_code(200);
     echo json_encode(['status' => 'ignored']);
     exit;
 }
 
+
 $data = $payload['data'];
+
+// =========================
+// 🧠 Normalización payload Trucky
+// =========================
+
+$jobId      = (int) $data['id'];
+$userTrucky = (int) $data['user_id'];
+$distanceKm = (int) round($data['driven_distance_km']) ?? 0;
+$income     = (int) $data['income'] ?? 0;
+$game       = $data['game']['code'] ?? 'ETS2';
+
+$fromCity = $data['source_city_id'] ?? '';
+$toCity   = $data['destination_city_id'] ?? '';
+
+$cargo = $data['cargo_definition']['name'] ?? 'sin carga';
+
+$truck = trim(
+    ($data['vehicle_brand_name'] ?? '') . ' ' . ($data['vehicle_model_name'] ?? '')
+);
+$truck = $truck ?: 'sin troca';
+
+
 
 /* =========================
    👤 Usuario
 ========================= */
 
 $stmt = $conn->prepare("SELECT id FROM users WHERE trucky_driver_id = ?");
-$stmt->bind_param("i", $data['driver']['id']);
+$stmt->bind_param("i", $userTrucky);
+
 $stmt->execute();
 
 $user = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
 if (!$user) {
-    http_response_code(404);
+    http_response_code(200);
+    logWebhook('Driver not registered', [
+        'driver_id' => $userTrucky
+    ]);
     exit(json_encode(['error' => 'Driver not registered']));
 }
 
@@ -150,11 +199,16 @@ $userId = (int) $user['id'];
 ========================= */
 
 $stmt = $conn->prepare("SELECT id FROM trucksbook_jobs WHERE job_id = ?");
-$stmt->bind_param("i", $data['job_id']);
+$stmt->bind_param("i", $jobId);
 $stmt->execute();
 
 if ($stmt->get_result()->num_rows > 0) {
     $stmt->close();
+    logWebhook('Duplicate job ignored', [
+        'job_id' => $jobId,
+        'user_id' => $userId
+    ]);
+    http_response_code(200);
     echo json_encode(['status' => 'duplicate']);
     exit;
 }
@@ -165,7 +219,7 @@ $stmt->close();
    🧮 Puntos
 ========================= */
 
-$points = (int) $data['distance_km'] * (int) env('POINTS_PER_KM', 1);
+$points = $distanceKm * (int) env('POINTS_PER_KM', 1);
 
 /* =========================
    🔒 Transacción
@@ -187,21 +241,26 @@ try {
         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
     ");
 
+    $fromCountry = null;
+    $toCountry = null;
+
     $stmt->bind_param(
         "iiisiisssssi",
-        $data['job_id'],
+        $jobId,
         $userId,
-        $data['game'],
-        $data['distance_km'],
-        $data['income'],
-        $data['from']['city'],
-        $data['from']['country'],
-        $data['to']['city'],
-        $data['to']['country'],
-        $data['cargo'],
-        $data['truck'],
+        $game,
+        $distanceKm,
+        $income,
+        $fromCity,
+        $fromCountry,
+        $toCity,
+        $toCountry,
+        $cargo,
+        $truck,
         $points
     );
+
+
 
     $stmt->execute();
     $stmt->close();
@@ -217,19 +276,20 @@ try {
         )
         VALUES (
             $userId,
-            {$data['distance_km']},
+            $distanceKm,
             1,
             $points,
             $points,
             NOW()
         )
         ON DUPLICATE KEY UPDATE
-            total_km = total_km + {$data['distance_km']},
+            total_km = total_km + $distanceKm,
             total_jobs = total_jobs + 1,
             total_points = total_points + $points,
             available_points = available_points + $points,
             last_job_at = NOW()
     ");
+
 
     /* =========================
        🏆 Grant achievements
@@ -245,7 +305,6 @@ try {
     ========================= */
 
     $conn->commit();
-
 } catch (Throwable $e) {
 
     $conn->rollback();
@@ -253,7 +312,8 @@ try {
     logWebhook('Transaction failed', [
         'error' => $e->getMessage(),
         'user_id' => $userId,
-        'job_id' => $data['job_id']
+        'job_id' => $jobId
+
     ]);
 
     http_response_code(500);
@@ -266,6 +326,6 @@ try {
 
 echo json_encode([
     'status'  => 'ok',
-    'job_id' => $data['job_id'],
+    'job_id' => $jobId,
     'points' => $points
 ]);
