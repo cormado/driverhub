@@ -116,6 +116,7 @@ $mi_tmp_id = $datos_usuario['tmp_id'] ? $datos_usuario['tmp_id'] : '---';
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,600;0,800;1,800&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/dashboard.css">
+    <link rel="icon" type="image/png" href="assets/img/logo.png">
     <script>
         function cambiarIdioma(nuevoLang) {
             const url = new URL(window.location.href);
