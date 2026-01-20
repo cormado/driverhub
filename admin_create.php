@@ -21,7 +21,11 @@ $mensaje = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $tmp_id = intval($_POST['tmp_id']);
-    $trucky_id = intval($_POST['trucky_id']);
+    
+    // --- CAMBIO 1: LOGICA PARA QUE SEA OPCIONAL (NULL SI ESTA VACIO) ---
+    // Si envian algo, lo convertimos a numero. Si no, lo dejamos como NULL.
+    $trucky_id = !empty($_POST['trucky_id']) ? intval($_POST['trucky_id']) : null;
+    
     $password = $_POST['password'];
     $system_role = $_POST['role'];
 
@@ -57,14 +61,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $mensaje = $t['create_msg_exists'];
             } else {
                 $pass_hash = password_hash($password, PASSWORD_DEFAULT);
-                $stmt = $conn->prepare("INSERT INTO users (username, password, role, tmp_id, avatar_url, vtc_rank,trucky_driver_id  ) VALUES (?, ?, ?, ?, ?, ?,?)");
-                $stmt->bind_param("sssissi", $username, $pass_hash, $system_role, $tmp_id, $avatar, $rango_vtc,$trucky_id);
+                
+                // Preparamos la inserción
+                $stmt = $conn->prepare("INSERT INTO users (username, password, role, tmp_id, avatar_url, vtc_rank, trucky_driver_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                
+                // Nota: 'sssissi' está bien. Si $trucky_id es null, mysqli lo maneja correctamente.
+                $stmt->bind_param("sssissi", $username, $pass_hash, $system_role, $tmp_id, $avatar, $rango_vtc, $trucky_id);
 
                 if ($stmt->execute()) {
                     header("Location: dashboard.php?view=database&lang=$lang");
                     exit();
                 } else {
-                    $mensaje = $t['create_msg_db_error'];
+                    $mensaje = $t['create_msg_db_error'] . " " . $conn->error;
                 }
             }
         } else {
@@ -135,6 +143,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border: 1px solid #444;
             color: white;
             font-family: 'Montserrat';
+            box-sizing: border-box; /* Agregado para que el padding no rompa el ancho */
         }
 
         .input:focus {
@@ -186,8 +195,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
 
             <div class="form-group">
-                <label class="label"><?php echo $t['create_label_trucky']; ?></label>
-                <input type="number" name="trucky_id" class="input" placeholder="Ej: 123456" required>
+                <label class="label"><?php echo $t['create_label_trucky']; ?> (Opcional)</label>
+                <input type="number" name="trucky_id" class="input" placeholder="Dejar vacío si no tiene">
             </div>
 
             <div class="form-group">

@@ -107,8 +107,8 @@ DB_USER="root"
 DB_PASSWORD=""
 DB_NAME="vintara_db"
 POINTS_PER_KM=1
-TRUCKY_API_KEY="your_jwt_token_here"
-TRUCKY_WEBHOOK_SECRET="your_webhook_secret_here"
+TRUCKY_API_KEY=your_jwt_token_here
+TRUCKY_WEBHOOK_SECRET=your_webhook_secret_here
 ```
 
 ---

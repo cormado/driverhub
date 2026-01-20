@@ -1,7 +1,8 @@
 <?php
 header('Content-Type: application/json');
 
-require __DIR__ . '../../../includes/db.php';
+require __DIR__ . '/../../includes/db.php';
+
 
 /* =========================
    🧩 Helpers
@@ -48,12 +49,8 @@ function logWebhook($title, $data = [])
     );
 }
 
-function env($key, $default = null)
-{
-    return $_ENV[$key] ?? $_SERVER[$key] ?? $default;
-}
 
-
+// echo json_encode(['status' => getenv('TRUCKY_WEBHOOK_SECRET')]);
 /* =========================
    📥 RAW Request
 ========================= */
@@ -96,9 +93,13 @@ $headers = getRequestHeaders();
  * X-Signature-Sha256
  * (NO usa el prefijo "sha256=")
  */
-$signature = $headers['X-Signature-Sha256'] ?? '';
+$signature =
+    $headers['x-signature-sha256']
+    ?? $headers['x-trucky-signature']
+    ?? '';
 
-$secret = env('TRUCKY_WEBHOOK_SECRET');
+
+$secret = getenv('TRUCKY_WEBHOOK_SECRET');
 
 if (!$secret) {
     logWebhook('Webhook error', ['error' => 'Missing webhook secret']);
@@ -219,7 +220,7 @@ $stmt->close();
    🧮 Puntos
 ========================= */
 
-$points = $distanceKm * (int) env('POINTS_PER_KM', 1);
+$points = $distanceKm * (int) getenv('POINTS_PER_KM', 1);
 
 /* =========================
    🔒 Transacción

@@ -1,7 +1,10 @@
 <?php
 session_start();
-// Ocultar errores visuales en producción
-error_reporting(0);
+// --- MODO DEBUG ACTIVADO ---
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+// ---------------------------
 
 // 2. INCLUDES NECESARIOS
 require_once 'includes/db.php'; // Use require_once

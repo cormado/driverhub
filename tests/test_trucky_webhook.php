@@ -2,63 +2,51 @@
 
 /**
  * TEST LOCAL PARA WEBHOOK TRUCKY
- * Ejecuta una simulación real del evento job.finished
+ * Simulación real compatible con el endpoint
  */
 
-function env($key, $default = null)
-{
-    return $_ENV[$key] ?? $_SERVER[$key] ?? $default;
-}
-
-$webhookUrl = 'https://e0382e57205a.ngrok-free.app/Driverhub/Api/trucky/job-finished.php';
-
-/* =========================
-   🔐 MISMA KEY QUE EN .env
-========================= */
+$webhookUrl = 'https://vtc.vintara.xyz/driverhub/Api/trucky/job-finished.php';
+// $webhookUrl = 'http://localhost/driverhub/Api/trucky/job-finished.php';
 
 require __DIR__ . '/../includes/db.php';
-$webhookSecret = env('TRUCKY_WEBHOOK_SECRET');
 
-// $webhookSecret = 'TU_TRUCKY_WEBHOOK_SECRET_AQUI';
+$webhookSecret = getenv('TRUCKY_WEBHOOK_SECRET');
+
+if (!$webhookSecret) {
+    die('❌ TRUCKY_WEBHOOK_SECRET no cargado');
+}
 
 /* =========================
-   📦 Payload simulado
+   📦 Payload SIMULADO REAL
 ========================= */
 
 $payload = [
-    'event' => 'job.finished',
+    'event' => 'job_completed',
     'data' => [
-        'job_id' => 987654322,
-        'game' => 'ETS2',
-        'distance_km' => 1250,
+        'id' => 987654322,
+        'user_id' => 251971,
+        'driven_distance_km' => 1250,
         'income' => 48000,
-
-        'from' => [
-            'city' => 'Madrid',
-            'country' => 'Spain'
+        'game' => [
+            'code' => 'ETS2'
         ],
-        'to' => [
-            'city' => 'Berlin',
-            'country' => 'Germany'
+        'source_city_id' => 'Madrid',
+        'destination_city_id' => 'Berlin',
+        'cargo_definition' => [
+            'name' => 'Electronics'
         ],
-
-        'cargo' => 'Electronics',
-        'truck' => 'Scania S',
-
-        'driver' => [
-            'id' => 251971,
-            'name' => 'xbyangelmx'
-        ]
+        'vehicle_brand_name' => 'Scania',
+        'vehicle_model_name' => 'S'
     ]
 ];
 
 $jsonPayload = json_encode($payload, JSON_UNESCAPED_UNICODE);
 
 /* =========================
-   🔑 Firma HMAC (igual Trucky)
+   🔑 Firma HMAC (IGUAL TRUCKY)
 ========================= */
 
-$signature = 'sha256=' . hash_hmac(
+$signature = hash_hmac(
     'sha256',
     $jsonPayload,
     $webhookSecret
@@ -75,7 +63,7 @@ curl_setopt_array($ch, [
     CURLOPT_POST => true,
     CURLOPT_HTTPHEADER => [
         'Content-Type: application/json',
-        'X-Trucky-Signature: ' . $signature
+        'X-Signature-Sha256: ' . $signature
     ],
     CURLOPT_POSTFIELDS => $jsonPayload
 ]);

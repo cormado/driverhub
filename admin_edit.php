@@ -37,7 +37,10 @@ $mensaje = "";
 // 4. PROCESAR CAMBIOS
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $nuevo_tmp_id = intval($_POST['tmp_id']);
-    $nuevo_trucky_id = intval($_POST['trucky_id']);
+    
+    // --- CAMBIO 1: LOGICA PARA QUE SEA OPCIONAL (NULL SI ESTA VACIO) ---
+    $nuevo_trucky_id = !empty($_POST['trucky_id']) ? intval($_POST['trucky_id']) : null;
+    
     $nuevo_pass = $_POST['password'];
     $nuevo_rol = $_POST['role'];
 
@@ -46,8 +49,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } elseif ($nuevo_rol === 'admin' && $rol_actual !== 'owner') {
         $mensaje = $t['edit_msg_admin_assign'];
     } else {
-        $stmt = $conn->prepare("UPDATE users SET role = ?, tmp_id = ?,trucky_driver_id = ? WHERE id = ?");
-        $stmt->bind_param("siii", $nuevo_rol, $nuevo_tmp_id,$nuevo_trucky_id, $id_usuario);
+        // Preparamos la actualización
+        $stmt = $conn->prepare("UPDATE users SET role = ?, tmp_id = ?, trucky_driver_id = ? WHERE id = ?");
+        // Nota: Si $nuevo_trucky_id es null, MySQLi lo maneja correctamente aunque el tipo sea 'i'
+        $stmt->bind_param("siii", $nuevo_rol, $nuevo_tmp_id, $nuevo_trucky_id, $id_usuario);
         $stmt->execute();       
 
         if (!empty($nuevo_pass)) {
@@ -214,8 +219,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
 
             <div class="form-group">
-                <label class="label"><?php echo $t['create_label_trucky']; ?></label>
-                <input type="number" name="trucky_id" class="input" value="<?php echo $usuario['trucky_driver_id']; ?>" required>
+                <label class="label"><?php echo $t['create_label_trucky']; ?> (Opcional)</label>
+                <input type="number" name="trucky_id" class="input" value="<?php echo $usuario['trucky_driver_id']; ?>" placeholder="Borrar número para quitar ID">
             </div>
 
             <div class="form-group">
