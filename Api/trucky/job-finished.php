@@ -1,30 +1,31 @@
 <?php
+declare(strict_types=1);
+
 header('Content-Type: application/json');
 
 require __DIR__ . '/../../includes/db.php';
 
-
-/* =========================
+/* ======================================================
    🧩 Helpers
-========================= */
+====================================================== */
 
-function getRequestHeaders()
+function getRequestHeaders(): array
 {
     if (function_exists('getallheaders')) {
-        return getallheaders();
+        return array_change_key_case(getallheaders(), CASE_LOWER);
     }
 
     $headers = [];
     foreach ($_SERVER as $key => $value) {
-        if (str_starts_with($key, 'HTTP_')) {
-            $name = str_replace('_', '-', substr($key, 5));
+        if (strpos($key, 'HTTP_') === 0) {
+            $name = strtolower(str_replace('_', '-', substr($key, 5)));
             $headers[$name] = $value;
         }
     }
     return $headers;
 }
 
-function logWebhook($title, $data = [])
+function logWebhook(string $title, array $data = []): void
 {
     $logDir  = __DIR__ . '/../../logs';
     $logFile = $logDir . '/trucky-webhook.log';
@@ -44,162 +45,152 @@ function logWebhook($title, $data = [])
     file_put_contents(
         $logFile,
         json_encode($entry, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
-            . PHP_EOL . str_repeat('-', 80) . PHP_EOL,
+        . PHP_EOL . str_repeat('-', 80) . PHP_EOL,
         FILE_APPEND
     );
 }
 
+function respond(int $code, array $body): never
+{
+    http_response_code($code);
+    exit(json_encode($body, JSON_UNESCAPED_UNICODE));
+}
 
-// echo json_encode(['status' => getenv('TRUCKY_WEBHOOK_SECRET')]);
-/* =========================
+/* ======================================================
+   🌐 Validar método
+====================================================== */
+
+if (!in_array($_SERVER['REQUEST_METHOD'], ['GET', 'POST'], true)) {
+    respond(405, ['error' => 'Method not allowed']);
+}
+
+/* ======================================================
+   🌐 GET → Webhook alive
+====================================================== */
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    respond(200, ['status' => 'webhook alive']);
+}
+
+/* ======================================================
    📥 RAW Request
-========================= */
+====================================================== */
 
-$rawPayload = file_get_contents('php://input');
-$payload    = json_decode($rawPayload, true);
+$rawPayload = file_get_contents('php://input') ?: '';
+
+if (strlen($rawPayload) > 200_000) {
+    respond(413, ['error' => 'Payload too large']);
+}
+
+$payload = json_decode($rawPayload, true);
 
 logWebhook('Incoming request', [
     'method' => $_SERVER['REQUEST_METHOD'],
-    'raw'    => $rawPayload
+    'raw'    => substr($rawPayload, 0, 5000)
 ]);
 
-/* =========================
-   🌐 GET → Webhook alive
-========================= */
-
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    echo json_encode(['status' => 'webhook alive']);
-    exit;
-}
-
-/* =========================
-   📭 POST vacío / test
-========================= */
-
 if (!$payload || !isset($payload['event'])) {
-    http_response_code(200);
-    echo json_encode(['status' => 'acknowledged']);
-    exit;
+    respond(200, ['status' => 'acknowledged']);
 }
 
-/* =========================
+/* ======================================================
    🔐 Validar firma webhook (Trucky)
-========================= */
+====================================================== */
 
 $headers = getRequestHeaders();
 
-/**
- * Trucky envía la firma en este header:
- * X-Signature-Sha256
- * (NO usa el prefijo "sha256=")
- */
-$signature =
+$signature = trim(
     $headers['x-signature-sha256']
-    ?? $headers['x-trucky-signature']
-    ?? '';
-
+        ?? $headers['x-trucky-signature']
+        ?? ''
+);
 
 $secret = getenv('TRUCKY_WEBHOOK_SECRET');
 
 if (!$secret) {
     logWebhook('Webhook error', ['error' => 'Missing webhook secret']);
-    http_response_code(500);
-    exit(json_encode(['error' => 'Server misconfigured']));
+    respond(500, ['error' => 'Server misconfigured']);
 }
 
-if (!$signature) {
+if ($signature === '') {
     logWebhook('Webhook error', ['error' => 'Missing signature header']);
-    http_response_code(401);
-    exit(json_encode(['error' => 'Missing signature']));
+    respond(401, ['error' => 'Missing signature']);
 }
 
-/**
- * Firma esperada (HMAC SHA256 del raw payload)
- */
-$expectedSignature = hash_hmac(
-    'sha256',
-    $rawPayload,
-    $secret
-);
+$expectedSignature = hash_hmac('sha256', $rawPayload, $secret);
 
-/**
- * Comparación segura
- */
 if (!hash_equals($expectedSignature, $signature)) {
     logWebhook('Invalid signature', [
         'expected' => $expectedSignature,
         'received' => $signature
     ]);
-    http_response_code(401);
-    exit(json_encode(['error' => 'Invalid webhook signature']));
+    respond(401, ['error' => 'Invalid webhook signature']);
 }
 
-
-/* =========================
+/* ======================================================
    📡 Validar evento
-========================= */
+====================================================== */
 
 if ($payload['event'] !== 'job_completed') {
-    logWebhook('IGNORANDO EVENTO', [
-        'event' => $payload['event']
-    ]);
-    http_response_code(200);
-    echo json_encode(['status' => 'ignored']);
-    exit;
+    logWebhook('Ignored event', ['event' => $payload['event']]);
+    respond(200, ['status' => 'ignored']);
 }
-
 
 $data = $payload['data'];
 
-// =========================
-// 🧠 Normalización payload Trucky
-// =========================
+/* ======================================================
+   🧠 Normalización payload Trucky
+====================================================== */
 
-$jobId      = (int) $data['id'];
-$userTrucky = (int) $data['user_id'];
-$distanceKm = (int) round($data['driven_distance_km']) ?? 0;
-$income     = (int) $data['income'] ?? 0;
+$jobId      = (int) ($data['id'] ?? 0);
+$userTrucky = (int) ($data['user_id'] ?? 0);
+$distanceKm = isset($data['driven_distance_km'])
+    ? (int) round($data['driven_distance_km'])
+    : 0;
+$income     = (int) ($data['income'] ?? 0);
 $game       = $data['game']['code'] ?? 'ETS2';
 
 $fromCity = $data['source_city_id'] ?? '';
 $toCity   = $data['destination_city_id'] ?? '';
 
+$fromCountry = null;
+$toCountry   = null;
+
 $cargo = $data['cargo_definition']['name'] ?? 'sin carga';
 
 $truck = trim(
-    ($data['vehicle_brand_name'] ?? '') . ' ' . ($data['vehicle_model_name'] ?? '')
+    ($data['vehicle_brand_name'] ?? '') . ' ' .
+    ($data['vehicle_model_name'] ?? '')
 );
 $truck = $truck ?: 'sin troca';
 
-
-
-/* =========================
+/* ======================================================
    👤 Usuario
-========================= */
+====================================================== */
 
-$stmt = $conn->prepare("SELECT id FROM users WHERE trucky_driver_id = ?");
+$stmt = $conn->prepare(
+    "SELECT id FROM users WHERE trucky_driver_id = ?"
+);
 $stmt->bind_param("i", $userTrucky);
-
 $stmt->execute();
 
 $user = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
 if (!$user) {
-    http_response_code(200);
-    logWebhook('Driver not registered', [
-        'driver_id' => $userTrucky
-    ]);
-    exit(json_encode(['error' => 'Driver not registered']));
+    logWebhook('Driver not registered', ['driver_id' => $userTrucky]);
+    respond(200, ['error' => 'Driver not registered']);
 }
 
 $userId = (int) $user['id'];
 
-/* =========================
+/* ======================================================
    🚫 Duplicados
-========================= */
+====================================================== */
 
-$stmt = $conn->prepare("SELECT id FROM trucksbook_jobs WHERE job_id = ?");
+$stmt = $conn->prepare(
+    "SELECT id FROM trucksbook_jobs WHERE job_id = ?"
+);
 $stmt->bind_param("i", $jobId);
 $stmt->execute();
 
@@ -209,22 +200,23 @@ if ($stmt->get_result()->num_rows > 0) {
         'job_id' => $jobId,
         'user_id' => $userId
     ]);
-    http_response_code(200);
-    echo json_encode(['status' => 'duplicate']);
-    exit;
+    respond(200, ['status' => 'duplicate']);
 }
-
 $stmt->close();
 
-/* =========================
+/* ======================================================
    🧮 Puntos
-========================= */
+====================================================== */
 
-$points = $distanceKm * (int) getenv('POINTS_PER_KM', 1);
+$pointsPerKm = getenv('POINTS_PER_KM') !== false
+    ? (int) getenv('POINTS_PER_KM')
+    : 1;
 
-/* =========================
+$points = $distanceKm * $pointsPerKm;
+
+/* ======================================================
    🔒 Transacción
-========================= */
+====================================================== */
 
 $conn->begin_transaction();
 
@@ -242,11 +234,8 @@ try {
         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
     ");
 
-    $fromCountry = null;
-    $toCountry = null;
-
     $stmt->bind_param(
-        "iiisiisssssi",
+        "iisiissssssi",
         $jobId,
         $userId,
         $game,
@@ -260,8 +249,6 @@ try {
         $truck,
         $points
     );
-
-
 
     $stmt->execute();
     $stmt->close();
@@ -291,9 +278,8 @@ try {
             last_job_at = NOW()
     ");
 
-
     /* =========================
-       🏆 Grant achievements
+       🏆 Achievements
     ========================= */
 
     $stmt = $conn->prepare("CALL grant_distance_achievements(?)");
@@ -301,31 +287,26 @@ try {
     $stmt->execute();
     $stmt->close();
 
-    /* =========================
-       ✅ Commit
-    ========================= */
-
     $conn->commit();
+
 } catch (Throwable $e) {
 
     $conn->rollback();
 
     logWebhook('Transaction failed', [
-        'error' => $e->getMessage(),
-        'user_id' => $userId,
+        'error'   => $e->getMessage(),
+        'user_id'=> $userId,
         'job_id' => $jobId
-
     ]);
 
-    http_response_code(500);
-    exit(json_encode(['error' => 'Database transaction failed']));
+    respond(500, ['error' => 'Database transaction failed']);
 }
 
-/* =========================
+/* ======================================================
    ✅ OK
-========================= */
+====================================================== */
 
-echo json_encode([
+respond(200, [
     'status'  => 'ok',
     'job_id' => $jobId,
     'points' => $points
