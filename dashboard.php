@@ -124,6 +124,8 @@ $mi_tmp_id = $datos_usuario['tmp_id'] ? $datos_usuario['tmp_id'] : '---';
             window.location.href = url.toString();
         }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 </head>
 
 <body>

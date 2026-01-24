@@ -5,7 +5,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $id = (int) ($_POST['id'] ?? 0);
 
-    if (!$id || !in_array($action, ['entregado','cancelado'])) {
+    if (!$id || !in_array($action, ['entregado', 'cancelado'])) {
         exit('Invalid request');
     }
 
@@ -49,11 +49,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $conn->commit();
 
-        header("Location: ../dashboard.php?view=manageStore&success=1");
+        header("Location: ../dashboard.php?view=manageStore&result=success&type=user_reward_$action");
         exit;
-
     } catch (Throwable $e) {
         $conn->rollback();
-        exit("Error: " . $e->getMessage());
+        header("Location: ../dashboard.php?view=manageStore&result=error&type=transaction_failed");
+        exit;
     }
 }

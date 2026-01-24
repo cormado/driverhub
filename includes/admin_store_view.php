@@ -546,3 +546,64 @@ if (!isset($conn)) {
         toggleModal('modalLogro', true);
     }
 </script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const params = new URLSearchParams(window.location.search);
+
+        const result = params.get("result");
+        const type = params.get("type");
+
+        if (!result || !type) return;
+
+        const messages = {
+            achievement_saved: {
+                title: "Logro guardado",
+                text: "El logro se guardó correctamente",
+                icon: "success"
+            },
+            achievement_deleted: {
+                title: "Logro eliminado",
+                text: "El logro fue eliminado",
+                icon: "success"
+            },
+            reward_saved: {
+                title: "Recompensa guardada",
+                text: "La recompensa se guardó correctamente",
+                icon: "success"
+            },
+            reward_deleted: {
+                title: "Recompensa eliminada",
+                text: "La recompensa fue eliminada",
+                icon: "success"
+            },
+            user_reward_entregado: {
+                title: "Canje entregado",
+                text: "El canje fue marcado como entregado",
+                icon: "success"
+            },
+            user_reward_cancelado: {
+                title: "Canje cancelado",
+                text: "Los puntos fueron devueltos al usuario",
+                icon: "warning"
+            },
+            transaction_failed: {
+                title: "Error",
+                text: "Ocurrió un error en la operación",
+                icon: "error"
+            }
+        };
+
+        const alert = messages[type] ?? {
+            title: "Acción realizada",
+            text: "La operación se completó",
+            icon: result
+        };
+
+        Swal.fire(alert);
+
+        // 🔥 Limpia la URL (clave)
+        const cleanUrl = window.location.pathname + "?view=manageStore";
+        window.history.replaceState({}, "", cleanUrl);
+    });
+</script>

@@ -100,7 +100,7 @@ if ($action === 'create' || $action === 'edit') {
     }
 
     if ($conn->query($sql)) {
-        header("Location: ../dashboard.php?view=manageStore&success=1");
+        header("Location: ../dashboard.php?view=manageStore&result=success&type=achievement_saved");
         exit;
     } else {
         die("Error SQL: " . $conn->error);
@@ -118,6 +118,6 @@ if ($action === 'delete') {
         $conn->query("DELETE FROM achievements WHERE id=$id");
     }
 
-    header("Location: ../dashboard.php?view=manageStore&deleted=1");
+    header("Location: ../dashboard.php?view=manageStore&result=success&type=achievement_deleted");
     exit;
 }

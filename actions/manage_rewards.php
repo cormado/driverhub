@@ -40,7 +40,8 @@ if ($action === 'create' || $action === 'edit') {
     }
 
     if ($conn->query($sql)) {
-        header("Location: ../dashboard.php?view=manageStore&success=1");
+        header("Location: ../dashboard.php?view=manageStore&result=success&type=reward_saved");
+        exit;
     } else {
         echo "Error: " . $conn->error;
     }
@@ -49,5 +50,6 @@ if ($action === 'create' || $action === 'edit') {
 if ($action === 'delete') {
     $id = intval($_POST['id']);
     $conn->query("DELETE FROM rewards WHERE id=$id");
-    header("Location: ../dashboard.php?view=manageStore&deleted=1");
+    header("Location: ../dashboard.php?view=manageStore&result=success&type=reward_deleted");
+    exit;
 }

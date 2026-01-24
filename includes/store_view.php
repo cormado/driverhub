@@ -6,6 +6,10 @@ require_once __DIR__ . "/db.php";
 // 1. DICCIONARIO DE TRADUCCIÓN PARA TICKETS
 $lang = isset($_GET['lang']) ? $_GET['lang'] : (isset($lang) ? $lang : 'es');
 
+//Obteniendo respuesta de la acción generada
+$success = $_GET['success'] ?? null;
+$error   = $_GET['error'] ?? null;
+
 //puntos totales y disponibles
 $stmt = $conn->prepare("SELECT total_points, available_points FROM user_stats WHERE user_id = ?");
 $stmt->bind_param("i", $uid_check);
@@ -558,4 +562,58 @@ $my_role = $_SESSION['role'];
 
         evt.currentTarget.classList.add("active");
     }
+</script>
+
+<?php if ($success): ?>
+<script>
+Swal.fire({
+    icon: 'success',
+    title: '¡Éxito!',
+    text: <?php
+        switch ($success) {
+            case 'redeem_ok':
+                echo json_encode('Recompensa canjeada correctamente 🎉');
+                break;
+            default:
+                echo json_encode('Operación realizada con éxito.');
+        }
+    ?>,
+    confirmButtonText: 'Aceptar'
+});
+</script>
+<?php endif; ?>
+<?php if ($error): ?>
+<script>
+Swal.fire({
+    icon: 'error',
+    title: 'Oops…',
+    text: <?php
+        switch ($error) {
+            case 'reward_not_available':
+                echo json_encode('Esta recompensa no está disponible.');
+                break;
+            case 'insufficient_points':
+                echo json_encode('No tienes puntos suficientes para canjear esta recompensa.');
+                break;
+            case 'invalid_reward':
+                echo json_encode('La recompensa seleccionada no es válida.');
+                break;
+            case 'not_logged_in':
+                echo json_encode('Debes iniciar sesión.');
+                break;
+            default:
+                echo json_encode('Ocurrió un error inesperado.');
+        }
+    ?>,
+    confirmButtonText: 'Cerrar'
+});
+</script>
+<?php endif; ?>
+<script>
+if (window.history.replaceState) {
+    const url = new URL(window.location);
+    url.searchParams.delete('success');
+    url.searchParams.delete('error');
+    window.history.replaceState({}, document.title, url.pathname + url.search);
+}
 </script>
